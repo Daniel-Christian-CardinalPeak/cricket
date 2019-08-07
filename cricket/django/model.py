@@ -6,10 +6,10 @@ collecetion and execution.
 import os
 import sys
 
-from cricket.model import Project
+from cricket.model import TestSuite, TestModule, TestCase, TestMethod
 
 
-class DjangoProject(Project):
+class DjangoTestSuite(TestSuite):
     '''
     The Project is a wrapper around the command-line calls to interface
     to test collection and test execution
@@ -19,7 +19,7 @@ class DjangoProject(Project):
         self.settings = None
         if options and hasattr(options, 'settings'):
             self.settings = options.settings
-        super(DjangoProject, self).__init__()
+        super(DjangoTestSuite, self).__init__()
 
     @classmethod
     def add_arguments(cls, parser):
@@ -72,3 +72,20 @@ class DjangoProject(Project):
         command.extend(labels)
 
         return command
+
+    def split_test_id(self, test_id):
+        pathparts = test_id.split('.')
+
+        return [
+            (TestModule, part)
+            for part in pathparts[:-2]
+        ] + [
+            (TestCase, pathparts[-2]),
+            (TestMethod, pathparts[-1]),
+        ]
+
+    def join_path(self, parent, klass, part):
+        if parent.path is None:
+            return part
+        else:
+            return '{}.{}'.format(parent.path, part)

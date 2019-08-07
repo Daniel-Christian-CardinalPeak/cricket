@@ -245,6 +245,7 @@ class Executor(EventSource):
                         try:
                             # No active test; first line tells us which test is running.
                             pre = json.loads(line)
+                            self.current_test = self.test_suite.put_test(pre['path'])
                         except ValueError:
                             self.emit('suit_end')
                             return True

@@ -502,7 +502,7 @@ class MainWindow(object):
         self._project = project
 
         # Get a count of active tests to display in the status bar.
-        count, labels = self.project.find_tests(True)
+        count, labels = self.project.find_tests(active=True)
         self.run_summary.set('T:%s P:0 F:0 E:0 X:0 U:0 S:0' % count)
 
         # Populate the initial tree nodes. This is recursive, because
@@ -563,19 +563,20 @@ class MainWindow(object):
         "Command: The 'run selected' button has been pressed"
         current_tree = self.current_test_tree
 
-        # If a node is selected, it needs to be made active
+        tests_to_run = set()
         for path in current_tree.selection():
-            parts = path.split('.')
-            testModule = self.project
-            for part in parts:
-                testModule = testModule[part]
-
-            testModule.set_active(True)
+            tests_to_run.add(path)
+            # parts = path.split('.')  # FIXME
+            # testModule = self.project
+            # for part in parts:
+            #     testModule = testModule[part]
+            # testModule.set_active(True)
 
         # If the executor isn't currently running, we can
         # start a test run.
         if not self.executor or not self.executor.is_running:
-            self.run(labels=set(current_tree.selection()))
+            self.run(labels=tests_to_run)
+            #self.run(labels=set(current_tree.selection()))
 
     def cmd_rerun(self, event=None):
         "Command: The run/stop button has been pressed"
@@ -920,7 +921,8 @@ class MainWindow(object):
         If labels is provided, only tests with those labels will
             be executed
         """
-        count, labels = self.project.find_tests(active, status, labels)
+        count, labels = self.test_suite.find_tests(active=active, status=status, labels=labels)
+        #count, labels = self.project.find_tests(active, status, labels)
         self.run_status.set('Running...')
         self.run_summary.set('T:%s P:0 F:0 E:0 X:0 U:0 S:0' % count)
 
