@@ -6,7 +6,7 @@ to initiate the GUI main loop.
 from argparse import ArgumentParser
 import subprocess
 import sys
-from cricket.events import debug, set_debug
+from cricket.events import debug, set_debug, is_debug
 
 try:
     from Tkinter import *
@@ -78,6 +78,10 @@ def main(Model):
     # This populates the tree, and sets listeners for
     # future tree modifications.
     view.test_suite = test_suite
+    if is_debug():
+        count, labels = test_suite.find_tests(allow_all=True)
+        debug("Found %d tests:", count)
+        debug("%s", '\n'.join(labels))
 
     # Run the main loop
     try:

@@ -477,12 +477,24 @@ class MainWindow(object):
 
     def _add_test_module(self, parentNode, testModule):
         """Recursively walk test modules to build display tree."""
-        debug("add_test_module top: %r %r", parentNode, testModule)
+        # Need proper tag to get the right select function
+        # We don't handle TestSuite, because it should aways be above this
+        if isinstance(testModule, TestModule):
+            tag = 'TestModule'
+        elif isinstance(testModule, TestCase):
+            tag = 'TestCase'
+        elif isinstance(testModule, TestMethod):
+            tag = 'TestMethod'
+        else:
+            debug("add_test_module: Unknown testModule: %r", testModule)
+            return
+
+        debug("add_test_module: %r %r %r", parentNode, tag, testModule)
         testModule_node = self.all_tests_tree.insert(
             parentNode, 'end', testModule.path,
             text=testModule.name,
-            tags=['TestModule', 'active'],
-            open=True)          # always insert node for testModule
+            tags=[tag, 'active'],
+            open=True)          # always insert a node
 
         if testModule.can_have_children():  # walk the children
             for subModuleName, subModule in sorted(testModule._child_nodes.items()):
@@ -611,7 +623,8 @@ class MainWindow(object):
 
     def on_testModuleClicked(self, event):
         "Event handler: a module has been clicked in the tree"
-        parts = event.widget.focus().split('.')
+        debug("testModuleClicked: %r", event.widget.focus())
+        parts = event.widget.focus().split('.')  # FIXME
         testModule = self.test_suite
         for part in parts:
             testModule = testModule[part]
@@ -620,7 +633,8 @@ class MainWindow(object):
 
     def on_testCaseClicked(self, event):
         "Event handler: a test case has been clicked in the tree"
-        parts = event.widget.focus().split('.')
+        debug("testCaseClicked: %r", event.widget.focus())
+        parts = event.widget.focus().split('.')  # FIXME
         testCase = self.test_suite
         for part in parts:
             testCase = testCase[part]
@@ -629,7 +643,8 @@ class MainWindow(object):
 
     def on_testMethodClicked(self, event):
         "Event handler: a test case has been clicked in the tree"
-        parts = event.widget.focus().split('.')
+        debug("testMethodClicked: %r", event.widget.focus())
+        parts = event.widget.focus().split('.')  # FIXME
         testMethod = self.test_suite
         for part in parts:
             testMethod = testMethod[part]
@@ -667,7 +682,8 @@ class MainWindow(object):
     def on_testMethodSelected(self, event):
         "Event handler: a test case has been selected in the tree"
         if len(event.widget.selection()) == 1:
-            parts = event.widget.selection()[0].split('.')
+            debug("testMethodSelected: %r", event.widget.selection()[0])
+            parts = event.widget.selection()[0].split('.')  # FIXME
 
             # Find the definition for the actual test method
             # out of the test_suite.
@@ -745,10 +761,11 @@ class MainWindow(object):
             # Test is in a failing state. Make sure it is on the problem tree,
             # with the correct current status.
 
-            parts = node.path.split('.')
+            debug("nodeStatusUpdate: %r", node.path)
+            parts = node.path.split('.')  # FIXME
             parentModule = self.test_suite
             for pos, part in enumerate(parts):
-                path = '.'.join(parts[:pos+1])
+                path = '.'.join(parts[:pos+1])  # FIXME
                 testModule = parentModule[part]
 
                 if not self.problem_tests_tree.exists(path):

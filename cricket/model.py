@@ -19,7 +19,7 @@ class ModelLoadError(Exception):
 
 
 class TestNode:
-    """Base class for all the other tests."""
+    """Base class for test nodes that can have children."""
     def __init__(self, source, path, name):
         self._child_labels = []
         self._child_nodes = {}  # {label : node }
@@ -86,13 +86,16 @@ class TestNode:
         "Is this test method currently active?"
         return self._active
 
-    def find_tests(self, active=True, status=None, labels=None):
+    def find_tests(self, active=True, status=None, labels=None, allow_all=False):
         """Find the test labels matching the search criteria.
 
         This will check:
             * active: if the method is currently an active test
             * status: if the last run status of the method is in the provided list
             * labels: if the method label is in the provided list
+
+        If not allow_all:
+            Returns a labels list as None if all tests are active (so just run everything)
 
         Returns a count of tests found, plus the labels needed to
         execute those tests.
@@ -125,7 +128,8 @@ class TestNode:
                     if child_node.path in labels:
                         # This child node exactly matches a requested label.
                         # Find *all* subtests of this node.
-                        subcount, subtests = child_node.find_tests(active, status)
+                        subcount, subtests = child_node.find_tests(
+                            active, status, allow_all=allow_all)
 
                         # If subtests have been found, but the list of subtests
                         # is None, then this node's path can be provided as a
@@ -138,7 +142,8 @@ class TestNode:
                             found_partial = True
                     else:
                         # Search children of this child for the provided labels.
-                        subcount, subtests = child_node.find_tests(active, status, labels)
+                        subcount, subtests = child_node.find_tests(
+                            active, status, labels, allow_all=allow_all)
 
                         # If subtests have been found, but the list of subtests
                         # is None, then this node's path can be provided as a
@@ -152,7 +157,8 @@ class TestNode:
 
                 else:
                     # All tests have been requested.
-                    subcount, subtests = child_node.find_tests(active, status)
+                    subcount, subtests = child_node.find_tests(
+                        active, status, allow_all=allow_all)
 
                     # If subtests have been found, but the list of subtests
                     # is empty, then this node's path can be provided as a
@@ -171,7 +177,7 @@ class TestNode:
         # No children were a partial match; therefore, this entire
         # node is being executed. Return the count of subtests found,
         # with a test list of None to flag the complete status.
-        if not found_partial:
+        if not found_partial and not allow_all:
             return count, None
 
         # Return the count of tests, and the labels needed to target them.
@@ -282,6 +288,7 @@ class TestMethod(EventSource):
         If cascade is True, the parent testCase will be prompted
         to check it's current active status.
         """
+        debug("%r set_active", self)
         if self._active:
             if not is_active:
                 self._active = False
@@ -297,7 +304,7 @@ class TestMethod(EventSource):
         "Toggle the current active status of this test method"
         self.set_active(not self.active)
 
-    def find_tests(self, active=True, status=None, labels=None):
+    def find_tests(self, active=True, status=None, labels=None, allow_all=False):
         """We're a leaf in tree, so it either matches us or doesn't."""
         if labels:
             if self.path in labels:
@@ -330,6 +337,7 @@ class TestCase(TestNode, EventSource):
         If cascade is True, the parent test module will be prompted
         to check it's current active status.
         """
+        debug("%r set_active", self)
         if self._active:
             if not is_active:
                 self._active = False
@@ -385,6 +393,7 @@ class TestModule(TestNode, EventSource):
         If cascade is True, the parent test module will be prompted
         to check it's current active status.
         """
+        debug("%r set_active", self)
         if self._active:
             if not is_active:
                 self._active = False

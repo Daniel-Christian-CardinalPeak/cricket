@@ -21,6 +21,7 @@ class EventSource(object):
             pass
 
 
+# TODO: debug support should be in it's own file
 _debug_on = False
 
 def debug(msg, *args, end='\n'):
@@ -52,3 +53,8 @@ def set_debug(enable):
     _debug_on = enable
 
     return old
+
+
+def is_debug():
+    """Return debug enable status."""
+    return _debug_on

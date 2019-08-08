@@ -49,11 +49,11 @@ def parse_status_and_error(post):
 
 class Executor(EventSource):
     "A wrapper around the subprocess that executes tests."
-    def __init__(self, project, count, labels):
-        self.project = project
+    def __init__(self, test_suite, count, labels):
+        self.test_suite = test_suite
 
         self.proc = subprocess.Popen(
-            self.project.execute_commandline(labels),
+            self.test_suite.execute_commandline(labels),
             stdin=None,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
