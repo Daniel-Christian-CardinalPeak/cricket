@@ -59,32 +59,12 @@ def main(Model):
     while project is None:
         try:
             debug("Discovering initial project")
-            # Create the project objects
             project = Model(options)
-
-            runner = subprocess.Popen(
-                project.discover_commandline(),
-                stdin=None,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                shell=False,
-            )
-
-            test_list = []
-            for line in runner.stdout:
-                test_list.append(line.strip().decode('utf-8'))
-
-            errors = []
-            for line in runner.stderr:
-                errors.append(line.strip().decode('utf-8'))
-            if errors and not test_list:
-                raise ModelLoadError('\n'.join(errors))
-
-            project.refresh(test_list, errors)
+            project.refresh()
         except ModelLoadError as e:
             # Load failed; destroy the project and show an error dialog.
             # If the user selects cancel, quit.
-            debug("Project initial failed.  Should display error dialog")
+            debug("Project initial failed.  Find error dialog and click on quit")
             project = None
             dialog = TestLoadErrorDialog(root, e.trace)
             if dialog.status == dialog.CANCEL:

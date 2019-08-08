@@ -434,6 +434,7 @@ class TestSuite(TestNode, EventSource):
         """Rediscover the tests in the test suite.
         """
         if test_list is None:
+            debug("Calling %s to discover tests", self.discover_commandline())
             runner = subprocess.Popen(
                 self.discover_commandline(),
                 stdin=None,
@@ -444,11 +445,16 @@ class TestSuite(TestNode, EventSource):
 
             test_list = []
             for line in runner.stdout:
-                test_list.append(line.strip().decode('utf-8'))
+                line = line.strip().decode('utf-8')
+                debug("Got line %r", line)
+                test_list.append(line)
 
             errors = []
             for line in runner.stderr:
-                errors.append(line.strip().decode('utf-8'))
+                line = line.strip().decode('utf-8')
+                debug("Got error %r", line)
+                errors.append(line)
+
             if errors and not test_list:
                 raise ModelLoadError('\n'.join(errors))
 
