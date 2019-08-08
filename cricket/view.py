@@ -623,31 +623,34 @@ class MainWindow(object):
 
     def on_testModuleClicked(self, event):
         "Event handler: a module has been clicked in the tree"
-        debug("testModuleClicked: %r", event.widget.focus())
-        parts = event.widget.focus().split('.')  # FIXME
+        label = event.widget.focus()
+        parts = self.test_suite.split_test_id(label)
+        debug("testModuleClicked: %r, %r", label, parts)
         testModule = self.test_suite
         for part in parts:
-            testModule = testModule[part]
+            testModule = testModule[part[1]]
 
         testModule.toggle_active()
 
     def on_testCaseClicked(self, event):
         "Event handler: a test case has been clicked in the tree"
-        debug("testCaseClicked: %r", event.widget.focus())
-        parts = event.widget.focus().split('.')  # FIXME
+        label = event.widget.focus()
+        parts = self.test_suite.split_test_id(label)
+        debug("testCaseClicked: %r, %r", label, parts)
         testCase = self.test_suite
         for part in parts:
-            testCase = testCase[part]
+            testCase = testCase[part[1]]
 
         testCase.toggle_active()
 
     def on_testMethodClicked(self, event):
         "Event handler: a test case has been clicked in the tree"
-        debug("testMethodClicked: %r", event.widget.focus())
-        parts = event.widget.focus().split('.')  # FIXME
+        label = event.widget.focus()
+        parts = self.test_suite.split_test_id(label)
+        debug("testMethodClicked: %r, %r", label, parts)
         testMethod = self.test_suite
         for part in parts:
-            testMethod = testMethod[part]
+            testMethod = testMethod[part[1]]
 
         testMethod.toggle_active()
 
@@ -682,14 +685,14 @@ class MainWindow(object):
     def on_testMethodSelected(self, event):
         "Event handler: a test case has been selected in the tree"
         if len(event.widget.selection()) == 1:
-            debug("testMethodSelected: %r", event.widget.selection()[0])
-            parts = event.widget.selection()[0].split('.')  # FIXME
+            parts = self.test_suite.split_test_id(event.widget.selection()[0])
+            debug("testMethodSelected 1: %r, %r", event.widget.selection()[0], parts)
 
             # Find the definition for the actual test method
             # out of the test_suite.
             testMethod = self.test_suite
             for part in parts:
-                testMethod = testMethod[part]
+                testMethod = testMethod[part[1]]
 
             self.name.set(testMethod.path)
 
@@ -721,6 +724,7 @@ class MainWindow(object):
                 self._hide_test_errors()
 
         else:
+            debug("testMethodSelected: %r", event.widget.selection())
             # Multiple tests selected
             self.name.set('')
             self.test_status.set('')
