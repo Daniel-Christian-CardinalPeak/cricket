@@ -6,7 +6,7 @@ class EventSource(object):
     An event source can receive handlers for events, and
     can emit events.
     """
-    _events = {}
+    _events = {}                # { class : { event : handler } }
 
     @classmethod
     def bind(cls, event, handler):

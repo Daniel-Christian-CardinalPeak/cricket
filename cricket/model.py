@@ -19,16 +19,17 @@ class ModelLoadError(Exception):
 
 
 class TestNode:
+    """Base class for all the other tests."""
     def __init__(self, source, path, name):
-        super().__init__()
         self._child_labels = []
-        self._child_nodes = {}
+        self._child_nodes = {}  # {label : node }
 
         self._source = source
 
         self._path = path
         self._name = name
         self._active = True
+        debug("%r (source=%r, path=%r, name=%r)", self, source, path, name)
 
     ######################################################################
     # Methods required by the TreeSource interface
@@ -59,14 +60,14 @@ class TestNode:
 
         self._child_nodes[label] = child
 
-        self._source._notify('insert', parent=self, index=index, item=child)
+        #self._source._notify('insert', parent=self, index=index, item=child)
 
     def __delitem__(self, label):
         # Find the label in the list of children, and remove it.
         index = self._child_labels.index(label)
         self._child_nodes[label] = child
 
-        self._source._notify('remove', item=child)
+        #self._source._notify('remove', item=child)
         del self._child_labels[index]
         del self._child_nodes[label]
 
@@ -99,7 +100,9 @@ class TestNode:
         tests = []
         count = 0
         found_partial = False
+        debug("%r Find_tests: active=%r, status=%r, labels=%r", self, active, status, labels)
         for child_label, child_node in self._child_nodes.items():
+            debug("Find_tests children: %r %r", child_label, child_node)
             # If only active tests have been requested,
             # the child node must be active.
             # If only "status == X" tests have been requested,
@@ -175,7 +178,7 @@ class TestNode:
         return count, tests
 
 
-class TestMethod:
+class TestMethod(EventSource):
     """A data representation of an individual test method.
     """
     STATUS_UNKNOWN = None
@@ -210,6 +213,7 @@ class TestMethod:
         self._output = None
         self._error = None
         self._duration = None
+        debug("%r (source=%r, path=%r, name=%r)", self, source, path, name)
 
     def __repr__(self):
         return '<TestMethod %s>' % self.path
@@ -270,7 +274,7 @@ class TestMethod:
         self._error = error
         self._duration = duration
 
-        self._source._notify('change', item=self)
+        #self._source._notify('change', item=self)
 
     def set_active(self, is_active, cascade=True):
         """Explicitly set the active state of the test method
@@ -294,6 +298,7 @@ class TestMethod:
         self.set_active(not self.active)
 
     def find_tests(self, active=True, status=None, labels=None):
+        """We're a leaf in tree, so it either matches us or doesn't."""
         if labels:
             if self.path in labels:
                 return 1, None
@@ -303,8 +308,8 @@ class TestMethod:
             return 1, None
 
 
-class TestCase(TestNode):
-    """A data representation of a test case, wrapping multiple test methods.
+class TestCase(TestNode, EventSource):
+    """A data representation of a test case, wrapping multiple TestMethod in a file.
     """
     #TEST_CASE_ICON = toga.Icon('icons/status/test_case.png')
 
@@ -358,7 +363,7 @@ class TestCase(TestNode):
         self.set_active(False)
 
 
-class TestModule(TestNode):
+class TestModule(TestNode, EventSource):
     """A data representation of a module. It may contain test cases, or other modules.
     """
     #TEST_MODULE_ICON = toga.Icon('icons/status/test_module.png')
@@ -415,9 +420,11 @@ class TestModule(TestNode):
 
 class TestSuite(TestNode, EventSource):
     """A data representation of a test suite, containing 1+ test cases.
+    This is the top of the tree
     """
     def __init__(self):
-        super().__init__(self, None, None)
+        debug("TestSuite()")
+        TestNode.__init__(self, None, None, None)
         self.errors = []
         self.coverage = False
 

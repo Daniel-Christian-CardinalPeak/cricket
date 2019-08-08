@@ -10,7 +10,7 @@ def main():
 
 
 def run():
-    main().main_loop()
+    main()
 
 
 if __name__ == "__main__":

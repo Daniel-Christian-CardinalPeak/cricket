@@ -14,6 +14,7 @@ except ImportError:
     from tkinter.ttk import *
     from tkinter import messagebox as tkMessageBox
 import webbrowser
+from cricket.events import debug
 
 # Check for the existence of coverage and duvet
 try:
@@ -98,8 +99,8 @@ class MainWindow(object):
 
         '''
 
-        self._project = None
         self.executor = None
+        self._test_suite = None  # top of test tree
 
         # Root window
         self.root = root
@@ -156,8 +157,8 @@ class MainWindow(object):
         self.menu_test = Menu(self.menubar)
         self.menubar.add_cascade(menu=self.menu_test, label='Test')
 
-        self.menu_beeware = Menu(self.menubar)
-        self.menubar.add_cascade(menu=self.menu_beeware, label='BeeWare')
+        #self.menu_beeware = Menu(self.menubar)
+        #self.menubar.add_cascade(menu=self.menu_beeware, label='BeeWare')
 
         self.menu_help = Menu(self.menubar)
         self.menubar.add_cascade(menu=self.menu_help, label='Help')
@@ -172,12 +173,16 @@ class MainWindow(object):
         self.menu_test.add_command(label='Run selected tests', command=self.cmd_run_selected)
         self.menu_test.add_command(label='Re-run failed tests', command=self.cmd_rerun)
 
-        self.menu_beeware.add_command(label='Open Duvet...', command=self.cmd_open_duvet, state=DISABLED if duvet is None else ACTIVE)
+        #self.menu_beeware.add_command(label='Open Duvet...', 
+        # command=self.cmd_open_duvet, state=DISABLED if duvet is None else ACTIVE)
 
         self.menu_help.add_command(label='Open Documentation', command=self.cmd_cricket_docs)
-        self.menu_help.add_command(label='Open Cricket project page', command=self.cmd_cricket_page)
-        self.menu_help.add_command(label='Open Cricket on GitHub', command=self.cmd_cricket_github)
-        self.menu_help.add_command(label='Open BeeWare project page', command=self.cmd_beeware_page)
+        self.menu_help.add_command(label='Open Cricket project page',
+                                   command=self.cmd_cricket_page)
+        self.menu_help.add_command(label='Open Cricket on GitHub',
+                                   command=self.cmd_cricket_github)
+        #self.menu_help.add_command(label='Open BeeWare project page', 
+        #command=self.cmd_beeware_page)
 
         # last step - configure the menubar
         self.root['menu'] = self.menubar
@@ -463,51 +468,38 @@ class MainWindow(object):
             return self.all_tests_tree
 
     ######################################################
-    # Handlers for setting a new project
+    # Handlers for setting a new test_suite
     ######################################################
 
     @property
-    def project(self):
-        return self._project
+    def test_suite(self):
+        return self._test_suite
 
     def _add_test_module(self, parentNode, testModule):
+        """Recursively walk test modules to build display tree."""
+        debug("add_test_module top: %r %r", parentNode, testModule)
         testModule_node = self.all_tests_tree.insert(
             parentNode, 'end', testModule.path,
             text=testModule.name,
             tags=['TestModule', 'active'],
-            open=True)
+            open=True)          # always insert node for testModule
 
-        for subModuleName, subModule in sorted(testModule.items()):
-            if isinstance(subModule, TestModule):
+        if testModule.can_have_children():  # walk the children
+            for subModuleName, subModule in sorted(testModule._child_nodes.items()):
                 self._add_test_module(testModule_node, subModule)
-            else:
-                testCase = subModule
-                testCase_node = self.all_tests_tree.insert(
-                    testModule_node, 'end', testCase.path,
-                    text=testCase.name,
-                    tags=['TestCase', 'active'],
-                    open=True
-                )
 
-                for testMethod_name, testMethod in sorted(testCase.items()):
-                    self.all_tests_tree.insert(
-                        testCase_node, 'end', testMethod.path,
-                        text=testMethod.name,
-                        tags=['TestMethod', 'active'],
-                        open=True
-                    )
-
-    @project.setter
-    def project(self, project):
-        self._project = project
+    @test_suite.setter
+    def test_suite(self, test_suite):
+        self._test_suite = test_suite
+        debug("view test_suite = %r", test_suite)
 
         # Get a count of active tests to display in the status bar.
-        count, labels = self.project.find_tests(active=True)
+        count, labels = self.test_suite.find_tests(active=True)
         self.run_summary.set('T:%s P:0 F:0 E:0 X:0 U:0 S:0' % count)
 
         # Populate the initial tree nodes. This is recursive, because
         # the tree could be of arbitrary depth.
-        for testModule_name, testModule in sorted(project.items()):
+        for testModule_name, testModule in sorted(test_suite._child_nodes.items()):
             self._add_test_module('', testModule)
 
         # Listen for any state changes on nodes in the tree
@@ -527,7 +519,7 @@ class MainWindow(object):
         # Listen for any status updates on nodes in the tree.
         TestMethod.bind('status_update', self.on_nodeStatusUpdate)
 
-        # Update the project to make sure coverage status matches the GUI
+        # Update the test_suite to make sure coverage status matches the GUI
         self.on_coverageChange()
 
     ######################################################
@@ -567,7 +559,7 @@ class MainWindow(object):
         for path in current_tree.selection():
             tests_to_run.add(path)
             # parts = path.split('.')  # FIXME
-            # testModule = self.project
+            # testModule = self.test_suite
             # for part in parts:
             #     testModule = testModule[part]
             # testModule.set_active(True)
@@ -605,10 +597,12 @@ class MainWindow(object):
 
     def cmd_cricket_github(self):
         "Show the Cricket GitHub repo"
-        webbrowser.open_new('http://github.com/pybee/cricket')
+        #webbrowser.open_new('http://github.com/pybee/cricket')
+        webbrowser.open_new('http://github.com/Daniel-Christian-CardinalPeak/cricket')
 
     def cmd_cricket_docs(self):
         "Show the Cricket documentation"
+        # FIXME: this site is old
         webbrowser.open_new('https://cricket.readthedocs.io/')
 
     ######################################################
@@ -618,7 +612,7 @@ class MainWindow(object):
     def on_testModuleClicked(self, event):
         "Event handler: a module has been clicked in the tree"
         parts = event.widget.focus().split('.')
-        testModule = self.project
+        testModule = self.test_suite
         for part in parts:
             testModule = testModule[part]
 
@@ -627,7 +621,7 @@ class MainWindow(object):
     def on_testCaseClicked(self, event):
         "Event handler: a test case has been clicked in the tree"
         parts = event.widget.focus().split('.')
-        testCase = self.project
+        testCase = self.test_suite
         for part in parts:
             testCase = testCase[part]
 
@@ -636,7 +630,7 @@ class MainWindow(object):
     def on_testMethodClicked(self, event):
         "Event handler: a test case has been clicked in the tree"
         parts = event.widget.focus().split('.')
-        testMethod = self.project
+        testMethod = self.test_suite
         for part in parts:
             testMethod = testMethod[part]
 
@@ -676,8 +670,8 @@ class MainWindow(object):
             parts = event.widget.selection()[0].split('.')
 
             # Find the definition for the actual test method
-            # out of the project.
-            testMethod = self.project
+            # out of the test_suite.
+            testMethod = self.test_suite
             for part in parts:
                 testMethod = testMethod[part]
 
@@ -752,7 +746,7 @@ class MainWindow(object):
             # with the correct current status.
 
             parts = node.path.split('.')
-            parentModule = self.project
+            parentModule = self.test_suite
             for pos, part in enumerate(parts):
                 path = '.'.join(parts[:pos+1])
                 testModule = parentModule[part]
@@ -786,7 +780,7 @@ class MainWindow(object):
 
     def on_coverageChange(self):
         "Event handler: when the coverage checkbox has been toggled"
-        self.project.coverage = self.coverage.get() == '1'
+        self.test_suite.coverage = self.coverage.get() == '1'
 
     def on_testProgress(self):
         "Event handler: a periodic update to poll the runner for output, generating GUI updates"
@@ -922,7 +916,7 @@ class MainWindow(object):
             be executed
         """
         count, labels = self.test_suite.find_tests(active=active, status=status, labels=labels)
-        #count, labels = self.project.find_tests(active, status, labels)
+        #count, labels = self.test_suite.find_tests(active, status, labels)
         self.run_status.set('Running...')
         self.run_summary.set('T:%s P:0 F:0 E:0 X:0 U:0 S:0' % count)
 
@@ -935,7 +929,7 @@ class MainWindow(object):
         self.progress_value.set(0)
 
         # Create the runner
-        self.executor = Executor(self.project, count, labels)
+        self.executor = Executor(self.test_suite, count, labels)
 
         # Queue the first progress handling event
         self.root.after(100, self.on_testProgress)

@@ -53,31 +53,31 @@ def main(Model):
     # Construct an empty window
     view = MainWindow(root)
 
-    # Try to load the project. If any error occurs during
-    # project load, show an error dialog
-    project = None
-    while project is None:
+    # Try to load the test_suite. If any error occurs during
+    # test_suite load, show an error dialog
+    test_suite = None
+    while test_suite is None:
         try:
-            debug("Discovering initial project")
-            project = Model(options)
-            project.refresh()
+            debug("Discovering initial test_suite")
+            test_suite = Model(options)
+            test_suite.refresh()
         except ModelLoadError as e:
-            # Load failed; destroy the project and show an error dialog.
+            # Load failed; destroy the test_suite and show an error dialog.
             # If the user selects cancel, quit.
-            debug("Project initial failed.  Find error dialog and click on quit")
-            project = None
+            debug("Test_Suite initial failed.  Find error dialog and click on quit")
+            test_suite = None
             dialog = TestLoadErrorDialog(root, e.trace)
             if dialog.status == dialog.CANCEL:
                 sys.exit(1)
-    if project.errors:
-        dialog = IgnorableTestLoadErrorDialog(root, '\n'.join(project.errors))
+    if test_suite.errors:
+        dialog = IgnorableTestLoadErrorDialog(root, '\n'.join(test_suite.errors))
         if dialog.status == dialog.CANCEL:
             sys.exit(1)
 
-    # Set the project for the main window.
+    # Set the test_suite for the main window.
     # This populates the tree, and sets listeners for
     # future tree modifications.
-    view.project = project
+    view.test_suite = test_suite
 
     # Run the main loop
     try:
