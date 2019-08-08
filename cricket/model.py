@@ -9,7 +9,7 @@ import subprocess
 import sys
 from datetime import datetime
 
-from cricket.events import EventSource
+from cricket.events import EventSource, debug
 
 
 class ModelLoadError(Exception):

@@ -6,6 +6,7 @@ to initiate the GUI main loop.
 from argparse import ArgumentParser
 import subprocess
 import sys
+from cricket.events import debug, set_debug
 
 try:
     from Tkinter import *
@@ -28,7 +29,10 @@ def main(Model):
     """
     parser = ArgumentParser()
 
-    parser.add_argument("--version", help="Display version number and exit", action="store_true")
+    parser.add_argument("--version", action="store_true",
+                        help="Display version number and exit")
+    parser.add_argument("--debug", "-d", action="store_true",
+                        help="Turn on debug prints (to console).  Also pass python '-u'")
 
     Model.add_arguments(parser)
     options = parser.parse_args()
@@ -37,9 +41,13 @@ def main(Model):
     if options.version:
         import cricket
         print(cricket.__version__)
-        return
+        sys.exit(2)
+
+    if options.debug:
+        set_debug(True)
 
     # Set up the root Tk context
+    debug("Starting GUI init")
     root = Tk()
 
     # Construct an empty window
@@ -50,6 +58,7 @@ def main(Model):
     project = None
     while project is None:
         try:
+            debug("Discovering initial project")
             # Create the project objects
             project = Model(options)
 
@@ -75,6 +84,7 @@ def main(Model):
         except ModelLoadError as e:
             # Load failed; destroy the project and show an error dialog.
             # If the user selects cancel, quit.
+            debug("Project initial failed.  Should display error dialog")
             project = None
             dialog = TestLoadErrorDialog(root, e.trace)
             if dialog.status == dialog.CANCEL:
@@ -91,6 +101,7 @@ def main(Model):
 
     # Run the main loop
     try:
+        debug("Starting GUI mainloop")
         view.mainloop()
     except KeyboardInterrupt:
         view.on_quit()
