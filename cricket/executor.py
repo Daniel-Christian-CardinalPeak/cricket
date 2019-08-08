@@ -246,11 +246,11 @@ class Executor(EventSource):
                             # No active test; first line tells us which test is running.
                             pre = json.loads(line)
                             self.current_test = self.test_suite.put_test(pre['path'])
+                            self.emit('test_start', test_path=pre['path'])
                         except ValueError:
-                            self.emit('suit_end')
+                            self.current_test = None
+                            self.emit('suite_end')
                             return True
-                        self.current_test = self.project.confirm_exists(pre['path'])
-                        self.emit('test_start', test_path=pre['path'])
         # If we're not finished, requeue the event.
         if finished:
             if self.error_buffer:

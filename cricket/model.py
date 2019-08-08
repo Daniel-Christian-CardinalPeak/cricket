@@ -461,9 +461,6 @@ class TestSuite(TestNode, EventSource):
         timestamp = datetime.now()
 
         # Make sure there is a data representation for every test in the list.
-        for test_label in test_list:
-            self.confirm_exists(test_label)
-
         for test_id in test_list:
             self.put_test(test_id)
 
