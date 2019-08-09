@@ -621,37 +621,41 @@ class MainWindow(object):
     # GUI Callbacks
     ######################################################
 
+    def get_node_from_label(self, root, label):
+        """Given a label, walk the tree and return that node.
+
+        Arguments:
+          root   Tree root node
+          label  Test label string
+
+        Retuns:
+          node
+        """
+        parts = self.test_suite.split_test_id(label)
+        node = self.test_suite
+        for part in parts:
+            node = node[part[1]]
+        return node
+
     def on_testModuleClicked(self, event):
         "Event handler: a module has been clicked in the tree"
         label = event.widget.focus()
-        parts = self.test_suite.split_test_id(label)
-        debug("testModuleClicked: %r, %r", label, parts)
-        testModule = self.test_suite
-        for part in parts:
-            testModule = testModule[part[1]]
-
+        testModule = self.get_node_from_label(self.test_suite, label)
+        debug("testModuleClicked: %r, %r", label, testModel)
         testModule.toggle_active()
 
     def on_testCaseClicked(self, event):
         "Event handler: a test case has been clicked in the tree"
         label = event.widget.focus()
-        parts = self.test_suite.split_test_id(label)
-        debug("testCaseClicked: %r, %r", label, parts)
-        testCase = self.test_suite
-        for part in parts:
-            testCase = testCase[part[1]]
-
+        testCase = self.get_node_from_label(self.test_suite, label)
+        debug("testCaseClicked: %r, %r", label, testCase)
         testCase.toggle_active()
 
     def on_testMethodClicked(self, event):
-        "Event handler: a test case has been clicked in the tree"
+        "Event handler: a test method has been clicked in the tree"
         label = event.widget.focus()
-        parts = self.test_suite.split_test_id(label)
-        debug("testMethodClicked: %r, %r", label, parts)
-        testMethod = self.test_suite
-        for part in parts:
-            testMethod = testMethod[part[1]]
-
+        testMethod = self.get_node_from_label(self.test_suite, label)
+        debug("testMethodClicked: %r, %r", label, testMethod)
         testMethod.toggle_active()
 
     def on_testModuleSelected(self, event):
@@ -685,14 +689,9 @@ class MainWindow(object):
     def on_testMethodSelected(self, event):
         "Event handler: a test case has been selected in the tree"
         if len(event.widget.selection()) == 1:
-            parts = self.test_suite.split_test_id(event.widget.selection()[0])
-            debug("testMethodSelected 1: %r, %r", event.widget.selection()[0], parts)
-
-            # Find the definition for the actual test method
-            # out of the test_suite.
-            testMethod = self.test_suite
-            for part in parts:
-                testMethod = testMethod[part[1]]
+            label = event.widget.selection()[0]
+            testMethod = self.get_node_from_label(self.test_suite, label)
+            debug("testMethodSelected 1: %r, %r", event.widget.selection()[0], testMethod)
 
             self.name.set(testMethod.path)
 
@@ -703,7 +702,7 @@ class MainWindow(object):
             self.test_status_widget.config(foreground=config['color'])
             self.test_status.set(config['symbol'])
 
-            if testMethod._result:
+            if testMethod.status != testMethod.STATUS_UNKNOWN:
                 # Test has been executed
                 self.duration.set('%0.2fs' % testMethod._result['duration'])
 

@@ -24,7 +24,7 @@ class TestNode:
         self._child_labels = []
         self._child_nodes = {}  # {label : node }
 
-        self._source = source
+        self._source = source   # AKA parent
 
         self._path = path
         self._name = name
@@ -293,12 +293,12 @@ class TestMethod(EventSource):
             if not is_active:
                 self._active = False
                 if cascade:
-                    self.parent._update_active()
+                    self._source._update_active()
         else:
             if is_active:
                 self._active = True
                 if cascade:
-                    self.parent._update_active()
+                    self._source._update_active()
 
     def toggle_active(self):
         "Toggle the current active status of this test method"
@@ -343,7 +343,7 @@ class TestCase(TestNode, EventSource):
                 self._active = False
                 # self.emit('inactive')
                 if cascade:
-                    self.parent._update_active()
+                    self._source._update_active()
                 for testMethod in self.values():
                     testMethod.set_active(False, cascade=False)
         else:
@@ -351,7 +351,7 @@ class TestCase(TestNode, EventSource):
                 self._active = True
                 # self.emit('active')
                 if cascade:
-                    self.parent._update_active()
+                    self._source._update_active()
                 for testMethod in self.values():
                     testMethod.set_active(True, cascade=False)
 
@@ -399,7 +399,7 @@ class TestModule(TestNode, EventSource):
                 self._active = False
                 # self.emit('inactive')
                 if cascade:
-                    self.parent._update_active()
+                    self._source._update_active()
                 for testModule in self.values():
                     testModule.set_active(False, cascade=False)
         else:
@@ -407,7 +407,7 @@ class TestModule(TestNode, EventSource):
                 self._active = True
                 # self.emit('active')
                 if cascade:
-                    self.parent._update_active()
+                    self._source._update_active()
                 for testModule in self.values():
                     testModule.set_active(True, cascade=False)
 
