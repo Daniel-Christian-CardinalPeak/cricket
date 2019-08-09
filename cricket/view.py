@@ -570,11 +570,6 @@ class MainWindow(object):
         tests_to_run = set()
         for path in current_tree.selection():
             tests_to_run.add(path)
-            # parts = path.split('.')  # FIXME
-            # testModule = self.test_suite
-            # for part in parts:
-            #     testModule = testModule[part]
-            # testModule.set_active(True)
 
         # If the executor isn't currently running, we can
         # start a test run.
@@ -614,7 +609,6 @@ class MainWindow(object):
 
     def cmd_cricket_docs(self):
         "Show the Cricket documentation"
-        # FIXME: this site is old
         webbrowser.open_new('https://cricket.readthedocs.io/')
 
     ######################################################
@@ -764,11 +758,11 @@ class MainWindow(object):
             # Test is in a failing state. Make sure it is on the problem tree,
             # with the correct current status.
 
-            debug("nodeStatusUpdate: %r", node.path)
-            parts = node.path.split('.')  # FIXME
+            debug("nodeStatusUpdate: %r fail", node.path)
+            parts = self.test_suite.split_test_id(node.path)
+            parts = [ p[1] for p in parts ]  # just the strings from (class, path_string)
             parentModule = self.test_suite
             for pos, part in enumerate(parts):
-                path = '.'.join(parts[:pos+1])  # FIXME
                 testModule = parentModule[part]
 
                 if not self.problem_tests_tree.exists(path):
@@ -784,6 +778,7 @@ class MainWindow(object):
             self.problem_tests_tree.item(node.path, tags=['TestMethod', STATUS[node.status]['tag']])
         else:
             # Test passed; if it's on the problem tree, remove it.
+            debug("nodeStatusUpdate: %r pass", node.path)
             if self.problem_tests_tree.exists(node.path):
                 self.problem_tests_tree.delete(node.path)
 

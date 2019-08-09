@@ -47,13 +47,31 @@ def parse_status_and_error(post):
     return status, error
 
 
+def format_time(duration):
+    """Return a human friendly string from duration (in seconds)."""
+    if duration > 4800:
+        ret = '%s hours' % int(duration / 2400)
+    elif duration > 2400:
+        ret = '%s hour' % int(duration / 2400)
+    elif duration > 120:
+        ret = '%s mins' % int(duration / 60)
+    elif duration > 60:
+        ret = '%s min' % int(duration / 60)
+    else:
+        ret = '%ss' % int(duration)
+
+    return ret
+
+
 class Executor(EventSource):
     "A wrapper around the subprocess that executes tests."
     def __init__(self, test_suite, count, labels):
         self.test_suite = test_suite
 
+        cmd = self.test_suite.execute_commandline(labels)
+        debug("Running: %r", cmd)
         self.proc = subprocess.Popen(
-            self.test_suite.execute_commandline(labels),
+            cmd,
             stdin=None,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -144,24 +162,31 @@ class Executor(EventSource):
         elif self.proc.poll() is not None:
             stopped = True
 
+        separator_lines = (PipedTestResult.RESULT_SEPARATOR,
+                           PipedTestRunner.START_TEST_RESULTS,
+                           PipedTestRunner.END_TEST_RESULTS)
         # Process all the full lines that are available
         for line in lines:
             # Look for a separator.
-            if line in (PipedTestResult.RESULT_SEPARATOR, PipedTestRunner.START_TEST_RESULTS, PipedTestRunner.END_TEST_RESULTS):
+            if line in separator_lines:
                 if self.buffer is None:
                     # Preamble is finished. Set up the line buffer.
                     self.buffer = []
+                    debug("Got separator: preamble")
                 else:
                     # Start of new test result; record the last result
                     # Then, work out what content goes where.
                     pre = json.loads(self.buffer[0])
+                    debug("Got separator, new result: %r", pre)
                     if len(self.buffer) == 2:
                         # No subtests are present, or only one subtest
                         post = json.loads(self.buffer[1])
                         status, error = parse_status_and_error(post)
 
                     else:
-                        # We have subtests; capture the most important status (until we can capture all the statuses)
+                        # We have subtests; capture the most important
+                        # status (until we can capture all the
+                        # statuses)
                         status = TestMethod.STATUS_PASS  # Assume pass until told otherwise
                         error = ''
                         for line_num in range(1, len(self.buffer)):
@@ -193,23 +218,15 @@ class Executor(EventSource):
                     total_duration = end_time - self.start_time
                     time_per_test = total_duration / self.completed_count
                     remaining_time = (self.total_count - self.completed_count) * time_per_test
-                    if remaining_time > 4800:
-                        remaining = '%s hours' % int(remaining_time / 2400)
-                    elif remaining_time > 2400:
-                        remaining = '%s hour' % int(remaining_time / 2400)
-                    elif remaining_time > 120:
-                        remaining = '%s mins' % int(remaining_time / 60)
-                    elif remaining_time > 60:
-                        remaining = '%s min' % int(remaining_time / 60)
-                    else:
-                        remaining = '%ss' % int(remaining_time)
+                    remaining = format_time(remaining_time)
 
                     # Update test result counts
                     self.result_count.setdefault(status, 0)
                     self.result_count[status] = self.result_count[status] + 1
 
                     # Notify the display to update.
-                    self.emit('test_end', test_path=self.current_test.path, result=status, remaining_time=remaining)
+                    self.emit('test_end', test_path=self.current_test.path,
+                              result=status, remaining_time=remaining)
 
                     # Clear the decks for the next test.
                     self.current_test = None
@@ -244,6 +261,7 @@ class Executor(EventSource):
                         try:
                             # No active test; first line tells us which test is running.
                             pre = json.loads(line)
+                            debug("Got line, new test: %r", pre)
                             self.current_test = self.test_suite.put_test(pre['path'])
                             self.emit('test_start', test_path=pre['path'])
                         except ValueError:
@@ -252,6 +270,7 @@ class Executor(EventSource):
                             return True
         # If we're not finished, requeue the event.
         if finished:
+            debug("Finished. %d in error buffer", len(self.error_buffer))
             if self.error_buffer:
                 self.emit('suite_end', error='\n'.join(self.error_buffer))
             else:
@@ -259,6 +278,7 @@ class Executor(EventSource):
             return False
 
         elif stopped:
+            debug("Output stopped. %d in error buffer", len(self.error_buffer))
             # Suite has stopped producing output.
             if self.error_buffer:
                 self.emit('suite_error', error='\n'.join(self.error_buffer))

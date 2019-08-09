@@ -198,13 +198,15 @@ class TestNode:
         # node is being executed. Return the count of subtests found,
         # with a test list of None to flag the complete status.
         if not found_partial and not allow_all:
-            debug("%r find_tests(%r, %r, %r): All selected",
-                  self, active, status, labels)
+            if count:
+                debug("%r find_tests(%r, %r, %r): All selected %d",
+                      self, active, status, labels, count)
             return count, None
 
         # Return the count of tests, and the labels needed to target them.
-        debug("%r find_tests(%r, %r, %r): Found %d %r",
-              self, active, status, labels, count, tests)
+        if count:
+            debug("%r find_tests(%r, %r, %r): Found %d %r",
+                  self, active, status, labels, count, tests)
         return count, tests
 
 
