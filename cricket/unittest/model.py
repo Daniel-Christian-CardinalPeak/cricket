@@ -21,6 +21,7 @@ class UnittestTestSuite(TestSuite):
     def split_test_id(self, test_id):
         pathparts = test_id.split('.')
 
+        # BUG? missing case of no TestCase, but unittest doesn't really care
         return [
             (TestModule, part)
             for part in pathparts[:-2]
@@ -29,8 +30,15 @@ class UnittestTestSuite(TestSuite):
             (TestMethod, pathparts[-1]),
         ]
 
-    def join_path(self, parent, klass, part):
-        if parent.path is None:
+    def join_path(self, parent, part):
+        """Join split portions back into a test label string."""
+        if isinstance(part, (list, tuple)):
+            part = '.'.join(part)
+
+        if parent is None:
             return part
         else:
-            return '{}.{}'.format(parent.path, part)
+            if isinstance(parent, (list, tuple)):
+                parent = '.'.join(parent)
+
+        return '{}.{}'.format(parent, part)

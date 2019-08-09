@@ -231,21 +231,34 @@ class TestNode:
         """Find all tests with substring in path."""
         ret = []
 
+        try:
+            if self.path and substring in self.path:
+                debug("find_tests_substring got %r in %r", substring, self.path)
+                ret.append(self.path)
+            else:
+                debug("find_tests_substring no %r in %r", substring, self.path)  # DEBUG
+                pass
+        except AttributeError:
+            pass                # TestSuite has no path
+
         for subModuleName, subModule in sorted(self._child_nodes.items()):
             if subModule.can_have_children():  # walk the children
                 ret.extend(subModule.find_tests_substring(substring))
-        else:                   # TestMethod
+        else:                   # TestMethods
             if substring in subModule.path:
                 debug("find_tests_substring got %r in %r", substring, subModule.path)
                 ret.append(subModule.path)
             else:
-                debug("find_tests_substring no %r in %r", substring, subModule.path)
+                debug("find_tests_substring no %r in %r", substring, subModule.path)  # DEBUG
+                pass
 
         return ret
 
 
 class TestMethod(EventSource):
     """A data representation of an individual test method.
+
+    This also stores the results of test exectution
     """
     STATUS_UNKNOWN = None
     STATUS_PASS = 100
@@ -530,23 +543,35 @@ class TestSuite(TestNode, EventSource):
     def put_test(self, test_id):
         """An idempotent insert method for tests.
         Ensures that a test identified as `test_id` exists in the test tree.
+        Creates all intermediate nodes as well
 
         Returns found or created node
         """
         parent = self
 
-        for NodeClass, part in self.split_test_id(test_id):
+        parts = self.split_test_id(test_id)
+        part_paths = [ d[1] for d in parts ]  # just the path strings
+
+        count = 0
+        for NodeClass, part in parts:
             try:
                 child = parent[part]
             except KeyError:
+                # need path so far, so re-create
+                # FIXME: parent needs to be all TestModules
+                # "path" needs to be TestMethod or (TestCase.name, TestMethod.name)
+                path = self.join_path(parent.path if parent is not None else None, part)
+                debug("put_test: test_id=%r path=%r", test_id, path)  # DEBUG
                 child = NodeClass(
                     source=self,
-                    path=self.join_path(parent, NodeClass, part),
+                    path=path,
                     name=part
                 )
                 parent[part] = child
-                debug("put_test created new node %r for %r under %r", child, test_id, self)
+                debug("put_test created new node %r, name=%r for %r under %r",
+                      child, path, test_id, self)
             parent = child
+            count += 1
 
         return child
 
@@ -607,5 +632,5 @@ class TestSuiteProblems(TestSuite):
     def split_test_id(self, test_id):
         return self.suite.split_test_id(test_id)
 
-    def join_path(self, parent, klass, part):
-        return self.suite.join_path(parent, klass, part)
+    def join_path(self, parent, part):
+        return self.suite.join_path(parent, part)

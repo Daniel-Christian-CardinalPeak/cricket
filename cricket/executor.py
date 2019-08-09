@@ -293,13 +293,19 @@ class Executor(EventSource):
 
         Returns True if there was an error
         """
+        debug("Got new test: %r", pre)
         try:
             # No active test; first line tells us which test is running.
-            debug("Got new test: %r", pre)
+            path = None
             if 'path' in pre:
                 path = pre['path']
             elif 'description' in pre:  # HACK? sometimes path is missing, but this isn't
                 path = pre['description']
+
+            if path is None:
+                debug("Could not find path: %r", pre)
+                self.current_test = None
+                return True
 
             try:
                 self.current_test = self.test_suite.get_node_from_label(path)
@@ -317,7 +323,8 @@ class Executor(EventSource):
 
             self.emit('test_start', test_path=self.current_test.path)
 
-        except ValueError:
+        except ValueError as e:
+            debug("ValueError: %r", e)
             self.current_test = None
             self.emit('suite_end')
             return True
