@@ -258,16 +258,8 @@ class Executor(EventSource):
                     # If we don't have an currently active test, this line will
                     # contain the path for the test.
                     if self.current_test is None:
-                        try:
-                            # No active test; first line tells us which test is running.
-                            pre = json.loads(line)
-                            self.current_test = self.test_suite.get_node_from_label(
-                                pre['path'])
-                            debug("Got new test: %r -> %r", pre, self.current_test.path)
-                            self.emit('test_start', test_path=self.current_test.path)
-                        except ValueError:
-                            self.current_test = None
-                            self.emit('suite_end')
+                        pre = json.loads(line)
+                        if self.handle_new_test(pre):
                             return True
         # If we're not finished, requeue the event.
         if finished:
@@ -292,3 +284,42 @@ class Executor(EventSource):
         else:
             # Still running - requeue event.
             return True
+
+    def handle_new_test(self, pre):
+        """Saw input with no current test.
+
+        Arguments:
+          pre  Dictionary with parsed json output from plugin
+
+        Returns True if there was an error
+        """
+        try:
+            # No active test; first line tells us which test is running.
+            debug("Got new test: %r", pre)
+            if 'path' in pre:
+                path = pre['path']
+            elif 'description' in pre:  # HACK? sometimes path is missing, but this isn't
+                path = pre['description']
+
+            try:
+                self.current_test = self.test_suite.get_node_from_label(path)
+            except KeyError:
+                # pytest likes to return just the last bit, search for it
+                debug("Straight lookup of %r failed", path)
+                matches = self.test_suite.find_tests_substring(path)
+                if len(matches) == 1:
+                    self.current_test = self.test_suite.get_node_from_label(
+                        matches[0])
+                else:
+                    debug("Could not resolve path %r: %r", path, matches)
+                    self.current_test = None
+                    return True
+
+            self.emit('test_start', test_path=self.current_test.path)
+
+        except ValueError:
+            self.current_test = None
+            self.emit('suite_end')
+            return True
+
+        return False

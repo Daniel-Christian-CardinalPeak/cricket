@@ -13,6 +13,7 @@ class EventSource(object):
         cls._events.setdefault(cls, {}).setdefault(event, []).append(handler)
 
     def emit(self, event, **data):
+        debug("emit %r", event)
         try:
             for handler in self._events[self.__class__][event]:
                 handler(self, **data)
@@ -42,7 +43,7 @@ def debug(msg, *args, end='\n'):
         return
     if args:
         msg = msg % args
-    print(msg, end=end)
+    print(msg, end=end, flush=True)
 
 
 def set_debug(enable):

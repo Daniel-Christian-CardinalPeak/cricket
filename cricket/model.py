@@ -227,6 +227,22 @@ class TestNode:
             node = node[part[1]]
         return node
 
+    def find_tests_substring(self, substring):
+        """Find all tests with substring in path."""
+        ret = []
+
+        for subModuleName, subModule in sorted(self._child_nodes.items()):
+            if subModule.can_have_children():  # walk the children
+                ret.extend(subModule.find_tests_substring(substring))
+        else:                   # TestMethod
+            if substring in subModule.path:
+                debug("find_tests_substring got %r in %r", substring, subModule.path)
+                ret.append(subModule.path)
+            else:
+                debug("find_tests_substring no %r in %r", substring, subModule.path)
+
+        return ret
+
 
 class TestMethod(EventSource):
     """A data representation of an individual test method.
