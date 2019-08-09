@@ -811,7 +811,10 @@ class MainWindow(object):
         "The executor has started running a new test."
         # Update status line, and set the tree item to active.
         self.run_status.set('Running %s...' % test_path)
-        self.all_tests_tree.item(test_path, tags=['TestMethod', 'active'])
+        try:
+            self.all_tests_tree.item(test_path, tags=['TestMethod', 'active'])
+        except TclError:
+            debug("Internal error trying to set tags on %r", test_path)
 
     def on_executorTestEnd(self, event, test_path, result, remaining_time):
         "The executor has finished running a test."

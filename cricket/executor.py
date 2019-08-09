@@ -278,7 +278,7 @@ class Executor(EventSource):
             return False
 
         elif stopped:
-            debug("Output stopped. %d in error buffer", len(self.error_buffer))
+            debug("Process stopped. %d in error buffer", len(self.error_buffer))
             # Suite has stopped producing output.
             if self.error_buffer:
                 self.emit('suite_error', error='\n'.join(self.error_buffer))
