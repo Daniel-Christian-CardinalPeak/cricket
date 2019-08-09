@@ -704,7 +704,7 @@ class MainWindow(object):
 
             if testMethod.status != testMethod.STATUS_UNKNOWN:
                 # Test has been executed
-                self.duration.set('%0.2fs' % testMethod._result['duration'])
+                self.duration.set('%0.2fs' % testMethod._duration)
 
                 if testMethod.output:
                     self._show_test_output(testMethod.output)

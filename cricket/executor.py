@@ -179,9 +179,8 @@ class Executor(EventSource):
                     start_time = float(pre['start_time'])
                     end_time = float(post['end_time'])
 
-                    self.current_test.description = post['description']
-
                     self.current_test.set_result(
+                        post['description'],
                         status=status,
                         output=post.get('output'),
                         error=error,

@@ -123,9 +123,9 @@ class TestNode:
         tests = []
         count = 0
         found_partial = False
-        debug("%r Find_tests: active=%r, status=%r, labels=%r", self, active, status, labels)
+        #debug("%r Find_tests: active=%r, status=%r, labels=%r", self, active, status, labels)
         for child_label, child_node in self._child_nodes.items():
-            debug("Find_tests children: %r %r", child_label, child_node)
+            #debug("Find_tests children: %r %r", child_label, child_node)
             # If only active tests have been requested,
             # the child node must be active.
             # If only "status == X" tests have been requested,
@@ -198,9 +198,13 @@ class TestNode:
         # node is being executed. Return the count of subtests found,
         # with a test list of None to flag the complete status.
         if not found_partial and not allow_all:
+            debug("%r find_tests(%r, %r, %r): All selected",
+                  self, active, status, labels)
             return count, None
 
         # Return the count of tests, and the labels needed to target them.
+        debug("%r find_tests(%r, %r, %r): Found %d %r",
+              self, active, status, labels, count, tests)
         return count, tests
 
 
