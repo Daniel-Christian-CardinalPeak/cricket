@@ -641,7 +641,7 @@ class MainWindow(object):
         "Event handler: a module has been clicked in the tree"
         label = event.widget.focus()
         testModule = self.get_node_from_label(self.test_suite, label)
-        debug("testModuleClicked: %r, %r", label, testModel)
+        debug("testModuleClicked: %r, %r", label, testModule)
         testModule.toggle_active()
 
     def on_testCaseClicked(self, event):

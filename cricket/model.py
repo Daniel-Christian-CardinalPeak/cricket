@@ -86,6 +86,26 @@ class TestNode:
         "Is this test method currently active?"
         return self._active
 
+    def set_active(self, value):
+        """Set active state
+        Sub-classes will usually override this."""
+        self._active = value
+
+    def toggle_active(self):
+        "Toggle the current active status of this test case"
+        self.set_active(not self.active)
+
+    def _update_active(self):
+        "Check the active status of all child nodes, and update the status of this node accordingly"
+        for testMethod_name, testMethod in self._child_nodes.items():
+            if testMethod.active:
+                # As soon as we find an active child, this node
+                # must be marked active, and no other checks are
+                # required.
+                self.set_active(True)
+                return
+        self.set_active(False)
+
     def find_tests(self, active=True, status=None, labels=None, allow_all=False):
         """Find the test labels matching the search criteria.
 
@@ -344,7 +364,7 @@ class TestCase(TestNode, EventSource):
                 # self.emit('inactive')
                 if cascade:
                     self._source._update_active()
-                for testMethod in self.values():
+                for testMethod in self._child_nodes.values():
                     testMethod.set_active(False, cascade=False)
         else:
             if is_active:
@@ -352,23 +372,8 @@ class TestCase(TestNode, EventSource):
                 # self.emit('active')
                 if cascade:
                     self._source._update_active()
-                for testMethod in self.values():
+                for testMethod in self._child_nodes.values():
                     testMethod.set_active(True, cascade=False)
-
-    def toggle_active(self):
-        "Toggle the current active status of this test case"
-        self.set_active(not self.active)
-
-    def _update_active(self):
-        "Check the active status of all child nodes, and update the status of this node accordingly"
-        for testMethod_name, testMethod in self.items():
-            if testMethod.active:
-                # As soon as we find an active child, this node
-                # must be marked active, and no other checks are
-                # required.
-                self.set_active(True)
-                return
-        self.set_active(False)
 
 
 class TestModule(TestNode, EventSource):
@@ -400,7 +405,7 @@ class TestModule(TestNode, EventSource):
                 # self.emit('inactive')
                 if cascade:
                     self._source._update_active()
-                for testModule in self.values():
+                for testModule in self._child_nodes.values():
                     testModule.set_active(False, cascade=False)
         else:
             if is_active:
@@ -408,7 +413,7 @@ class TestModule(TestNode, EventSource):
                 # self.emit('active')
                 if cascade:
                     self._source._update_active()
-                for testModule in self.values():
+                for testModule in self._child_nodes.values():
                     testModule.set_active(True, cascade=False)
 
     def toggle_active(self):
@@ -421,7 +426,7 @@ class TestModule(TestNode, EventSource):
         Purge any test module without any test cases, and any test Case with no
         test methods.
         """
-        for testModule_name, testModule in self.items():
+        for testModule_name, testModule in self._child_nodes.items():
             testModule._purge(timestamp)
             if len(testModule) == 0:
                 self.pop(testModule_name)
