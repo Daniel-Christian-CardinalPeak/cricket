@@ -615,40 +615,24 @@ class MainWindow(object):
     # GUI Callbacks
     ######################################################
 
-    def get_node_from_label(self, root, label):
-        """Given a label, walk the tree and return that node.
-
-        Arguments:
-          root   Tree root node
-          label  Test label string
-
-        Retuns:
-          node
-        """
-        parts = self.test_suite.split_test_id(label)
-        node = self.test_suite
-        for part in parts:
-            node = node[part[1]]
-        return node
-
     def on_testModuleClicked(self, event):
         "Event handler: a module has been clicked in the tree"
         label = event.widget.focus()
-        testModule = self.get_node_from_label(self.test_suite, label)
+        testModule = self.test_suite.get_node_from_label(label)
         debug("testModuleClicked: %r, %r", label, testModule)
         testModule.toggle_active()
 
     def on_testCaseClicked(self, event):
         "Event handler: a test case has been clicked in the tree"
         label = event.widget.focus()
-        testCase = self.get_node_from_label(self.test_suite, label)
+        testCase = self.test_suite.get_node_from_label(label)
         debug("testCaseClicked: %r, %r", label, testCase)
         testCase.toggle_active()
 
     def on_testMethodClicked(self, event):
         "Event handler: a test method has been clicked in the tree"
         label = event.widget.focus()
-        testMethod = self.get_node_from_label(self.test_suite, label)
+        testMethod = self.test_suite.get_node_from_label(label)
         debug("testMethodClicked: %r, %r", label, testMethod)
         testMethod.toggle_active()
 
@@ -684,7 +668,7 @@ class MainWindow(object):
         "Event handler: a test case has been selected in the tree"
         if len(event.widget.selection()) == 1:
             label = event.widget.selection()[0]
-            testMethod = self.get_node_from_label(self.test_suite, label)
+            testMethod = self.test_suite.get_node_from_label(label)
             debug("testMethodSelected 1: %r, %r", event.widget.selection()[0], testMethod)
 
             self.name.set(testMethod.path)
@@ -814,7 +798,7 @@ class MainWindow(object):
         try:
             self.all_tests_tree.item(test_path, tags=['TestMethod', 'active'])
         except TclError:
-            debug("Internal error trying to set tags on %r", test_path)
+            debug("INTERNAL ERROR trying to set tags on %r", test_path)
 
     def on_executorTestEnd(self, event, test_path, result, remaining_time):
         "The executor has finished running a test."

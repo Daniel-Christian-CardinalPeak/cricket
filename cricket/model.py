@@ -209,6 +209,24 @@ class TestNode:
                   self, active, status, labels, count, tests)
         return count, tests
 
+    def get_node_from_label(self, label):
+        """Given a label, walk the tree and return that node.
+
+        Arguments:
+          root   Tree root node
+          label  Test label string
+
+        Retuns:
+          node
+
+        Raises KeyError if not found
+        """
+        parts = self.split_test_id(label)
+        node = self
+        for part in parts:
+            node = node[part[1]]
+        return node
+
 
 class TestMethod(EventSource):
     """A data representation of an individual test method.
@@ -496,6 +514,8 @@ class TestSuite(TestNode, EventSource):
     def put_test(self, test_id):
         """An idempotent insert method for tests.
         Ensures that a test identified as `test_id` exists in the test tree.
+
+        Returns found or created node
         """
         parent = self
 
@@ -509,6 +529,7 @@ class TestSuite(TestNode, EventSource):
                     name=part
                 )
                 parent[part] = child
+                debug("put_test created new node %r for %r under %r", child, test_id, self)
             parent = child
 
         return child
@@ -555,7 +576,7 @@ class TestSuiteProblems(TestSuite):
     def change(self, item):
         if item.status in TestMethod.FAILING_STATES:
             # Test didn't pass. Make sure it exists in the problem tree.
-            failing_item = self.put_test(item.path)
+            failing_item = self.get_node_from_label(item.path)
 
             failing_item.set_result(
                 description=item.description,

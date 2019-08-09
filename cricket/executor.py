@@ -172,12 +172,12 @@ class Executor(EventSource):
                 if self.buffer is None:
                     # Preamble is finished. Set up the line buffer.
                     self.buffer = []
-                    debug("Got separator: preamble")
+                    #debug("Got preamble")
                 else:
                     # Start of new test result; record the last result
                     # Then, work out what content goes where.
                     pre = json.loads(self.buffer[0])
-                    debug("Got separator, new result: %r", pre)
+                    debug("Got new result: %r", pre)
                     if len(self.buffer) == 2:
                         # No subtests are present, or only one subtest
                         post = json.loads(self.buffer[1])
@@ -205,7 +205,7 @@ class Executor(EventSource):
                     end_time = float(post['end_time'])
 
                     self.current_test.set_result(
-                        post['description'],
+                        description=post['description'],
                         status=status,
                         output=post.get('output'),
                         error=error,
@@ -261,9 +261,10 @@ class Executor(EventSource):
                         try:
                             # No active test; first line tells us which test is running.
                             pre = json.loads(line)
-                            debug("Got line, new test: %r", pre)
-                            self.current_test = self.test_suite.put_test(pre['path'])
-                            self.emit('test_start', test_path=pre['path'])
+                            self.current_test = self.test_suite.get_node_from_label(
+                                pre['path'])
+                            debug("Got new test: %r -> %r", pre, self.current_test.path)
+                            self.emit('test_start', test_path=self.current_test.path)
                         except ValueError:
                             self.current_test = None
                             self.emit('suite_end')
