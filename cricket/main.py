@@ -4,6 +4,7 @@ load a "project" for discovering and executing tests, and
 to initiate the GUI main loop.
 '''
 from argparse import ArgumentParser
+import os
 import subprocess
 import sys
 from cricket.events import debug, set_debug, is_debug
@@ -33,6 +34,8 @@ def main(Model):
                         help="Display version number and exit")
     parser.add_argument("--debug", "-d", action="store_true",
                         help="Turn on debug prints (to console).  Also pass python '-u'")
+    parser.add_argument("testdir", action="store", default="", nargs='?',
+                        help="Test root directory.  Default is current directory")
 
     Model.add_arguments(parser)
     options = parser.parse_args()
@@ -45,6 +48,9 @@ def main(Model):
 
     if options.debug:
         set_debug(True)
+
+    if options.testdir:
+        os.chdir(options.testdir)
 
     # Set up the root Tk context
     debug("Starting GUI init")
