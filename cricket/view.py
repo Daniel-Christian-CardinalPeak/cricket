@@ -479,6 +479,7 @@ class MainWindow(object):
         """Recursively walk test modules to build display tree."""
         # Need proper tag to get the right select function
         # We don't handle TestSuite, because it should aways be above this
+        # try this:  tag = testModule.__class__.__name__
         if isinstance(testModule, TestModule):
             tag = 'TestModule'
         elif isinstance(testModule, TestCase):
@@ -734,7 +735,7 @@ class MainWindow(object):
         self.all_tests_tree.item(node.path, tags=[node.__class__.__name__, 'inactive'])
         self.all_tests_tree.item(node.path, open=False)
 
-    def on_nodeStatusUpdate(self, node):
+    def on_nodeStatusUpdate(self, event, node):
         "Event handler: a node on the tree has received a status update"
         self.all_tests_tree.item(node.path, tags=['TestMethod', STATUS[node.status]['tag']])
 
@@ -744,14 +745,21 @@ class MainWindow(object):
 
             debug("nodeStatusUpdate: %r fail", node.path)
             parts = self.test_suite.split_test_id(node.path)
-            parts = [ p[1] for p in parts ]  # just the strings from (class, path_string)
             parentModule = self.test_suite
             for pos, part in enumerate(parts):
-                testModule = parentModule[part]
+                testModule = parentModule[part[1]]
+                if parentModule is None or parentModule.path is None:
+                    path = self._test_suite.join_path(None, part[1])
+                elif part[0] == TestModule:
+                    path = self._test_suite.join_path((parentModule.path, part[1]), None)
+                else:
+                    path = self._test_suite.join_path(parentModule.path, part[1])
 
                 if not self.problem_tests_tree.exists(path):
+                    debug("Create problem node %r under %r", testModule, parentModule)
+                    parent_path = parentModule.path if parentModule.path else ''
                     self.problem_tests_tree.insert(
-                        parentModule.path, 'end', testModule.path,
+                        parent_path, 'end', testModule.path,
                         text=testModule.name,
                         tags=[testModule.__class__.__name__, 'active'],
                         open=True
@@ -805,17 +813,7 @@ class MainWindow(object):
         # Update the progress meter
         self.progress_value.set(self.progress_value.get() + 1)
 
-        # Update the run summary
-        self.run_summary.set('T:%(total)s P:%(pass)s F:%(fail)s E:%(error)s X:%(expected)s U:%(unexpected)s S:%(skip)s, ~%(remaining)s remaining' % {
-            'total': self.executor.total_count,
-            'pass': self.executor.result_count.get(TestMethod.STATUS_PASS, 0),
-            'fail': self.executor.result_count.get(TestMethod.STATUS_FAIL, 0),
-            'error': self.executor.result_count.get(TestMethod.STATUS_ERROR, 0),
-            'expected': self.executor.result_count.get(TestMethod.STATUS_EXPECTED_FAIL, 0),
-            'unexpected': self.executor.result_count.get(TestMethod.STATUS_UNEXPECTED_SUCCESS, 0),
-            'skip': self.executor.result_count.get(TestMethod.STATUS_SKIP, 0),
-            'remaining': remaining_time
-        })
+        self._set_run_summary(remaining_time)  # Update the run summary
 
         # If the test that just fininshed is the one (and only one)
         # selected on the tree, update the display.
@@ -857,16 +855,7 @@ class MainWindow(object):
 
         dialog(message=message or 'No tests were ran')
 
-        # Reset the running summary.
-        self.run_summary.set('T:%(total)s P:%(pass)s F:%(fail)s E:%(error)s X:%(expected)s U:%(unexpected)s S:%(skip)s' % {
-            'total': self.executor.total_count,
-            'pass': self.executor.result_count.get(TestMethod.STATUS_PASS, 0),
-            'fail': self.executor.result_count.get(TestMethod.STATUS_FAIL, 0),
-            'error': self.executor.result_count.get(TestMethod.STATUS_ERROR, 0),
-            'expected': self.executor.result_count.get(TestMethod.STATUS_EXPECTED_FAIL, 0),
-            'unexpected': self.executor.result_count.get(TestMethod.STATUS_UNEXPECTED_SUCCESS, 0),
-            'skip': self.executor.result_count.get(TestMethod.STATUS_SKIP, 0),
-        })
+        self._set_run_summary()  # Reset the run summary
 
         # Reset the buttons
         self.reset_button_states_on_end()
@@ -979,6 +968,26 @@ class MainWindow(object):
         self.error_label.grid()
         self.error.grid()
         self.error_scrollbar.grid()
+
+    def _set_run_summary(self, remaining_time=None):
+        """Update run summary with latest details."""
+        format_string = \
+            'T:%(total)s P:%(pass)s F:%(fail)s E:%(error)s X:%(expected)s U:%(unexpected)s S:%(skip)s'
+        data = {
+            'total': self.executor.total_count,
+            'pass': self.executor.result_count.get(TestMethod.STATUS_PASS, 0),
+            'fail': self.executor.result_count.get(TestMethod.STATUS_FAIL, 0),
+            'error': self.executor.result_count.get(TestMethod.STATUS_ERROR, 0),
+            'expected': self.executor.result_count.get(TestMethod.STATUS_EXPECTED_FAIL, 0),
+            'unexpected': self.executor.result_count.get(TestMethod.STATUS_UNEXPECTED_SUCCESS, 0),
+            'skip': self.executor.result_count.get(TestMethod.STATUS_SKIP, 0),
+        }
+
+        if remaining_time is not None:
+            format_string += ', ~%(remaining)s remaining'
+            data['remaining'] = remaining_time
+
+        self.run_summary.set(format_string % data)
 
 
 class StackTraceDialog(Toplevel):

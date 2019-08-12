@@ -1,4 +1,5 @@
 import json
+import os
 import subprocess
 import sys
 from threading import Thread
@@ -69,7 +70,7 @@ class Executor(EventSource):
         self.test_suite = test_suite
 
         cmd = self.test_suite.execute_commandline(labels)
-        debug("Running: %r", cmd)
+        debug("Running(%r): %r", os.getcwd(), cmd)
         self.proc = subprocess.Popen(
             cmd,
             stdin=None,
@@ -172,7 +173,7 @@ class Executor(EventSource):
                 if self.buffer is None:
                     # Preamble is finished. Set up the line buffer.
                     self.buffer = []
-                    #debug("Got preamble")
+                    debug("Got preamble: %r", line)
                 else:
                     # Start of new test result; record the last result
                     # Then, work out what content goes where.
@@ -225,6 +226,7 @@ class Executor(EventSource):
                     self.result_count[status] = self.result_count[status] + 1
 
                     # Notify the display to update.
+                    self.current_test.emit('status_update', node=self.current_test)
                     self.emit('test_end', test_path=self.current_test.path,
                               result=status, remaining_time=remaining)
 
@@ -244,6 +246,7 @@ class Executor(EventSource):
                 if self.buffer is None:
                     # Suite isn't running yet - just display the output
                     # as a status update line.
+                    # BUG??? never triggers.  Preamble set buffer above
                     self.emit('test_status_update', update=line)
                 else:
                     # Suite is running - have we got an active test?
@@ -261,6 +264,7 @@ class Executor(EventSource):
                         pre = json.loads(line)
                         if self.handle_new_test(pre):
                             return True
+
         # If we're not finished, requeue the event.
         if finished:
             debug("Finished. %d in error buffer", len(self.error_buffer))
