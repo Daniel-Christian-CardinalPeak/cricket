@@ -123,9 +123,7 @@ class TestNode:
         tests = []
         count = 0
         found_partial = False
-        #debug("%r Find_tests: active=%r, status=%r, labels=%r", self, active, status, labels)
         for child_label, child_node in self._child_nodes.items():
-            #debug("Find_tests children: %r %r", child_label, child_node)
             # If only active tests have been requested,
             # the child node must be active.
             # If only "status == X" tests have been requested,
@@ -198,15 +196,15 @@ class TestNode:
         # node is being executed. Return the count of subtests found,
         # with a test list of None to flag the complete status.
         if not found_partial and not allow_all:
-            if count:
-                debug("%r find_tests(%r, %r, %r): All selected %d",
-                      self, active, status, labels, count)
+            # if count:
+            #     debug("%r find_tests(%r, %r, %r): All selected %d",
+            #           self, active, status, labels, count)
             return count, None
 
         # Return the count of tests, and the labels needed to target them.
-        if count:
-            debug("%r find_tests(%r, %r, %r): Found %d %r",
-                  self, active, status, labels, count, tests)
+        # if count:
+        #     debug("%r find_tests(%r, %r, %r): Found %d %r",
+        #           self, active, status, labels, count, tests)
         return count, tests
 
     def get_node_from_label(self, label):
@@ -286,7 +284,7 @@ class TestMethod(EventSource):
         self._output = None
         self._error = None
         self._duration = None
-        debug("%r (source=%r, path=%r, name=%r)", self, source, path, name)
+        #debug("%r (source=%r, path=%r, name=%r)", self, source, path, name)
 
     def __repr__(self):
         return '<TestMethod %s>' % self.path
@@ -408,7 +406,7 @@ class TestCase(TestNode, EventSource):
         if self._active:
             if not is_active:
                 self._active = False
-                # self.emit('inactive')
+                self.emit('inactive')
                 if cascade:
                     self._source._update_active()
                 for testMethod in self._child_nodes.values():
@@ -416,7 +414,7 @@ class TestCase(TestNode, EventSource):
         else:
             if is_active:
                 self._active = True
-                # self.emit('active')
+                self.emit('active')
                 if cascade:
                     self._source._update_active()
                 for testMethod in self._child_nodes.values():
@@ -558,12 +556,6 @@ class TestSuite(TestNode, EventSource):
                     path = self.join_path(None, part)
                 elif NodeClass == TestModule:
                     path = self.join_path((parent.path, part), None)
-                elif isinstance(parent, TestCase):
-                    # FIXME
-                    # parent must be a TestModule
-                    # "path" needs to be TestMethod or (TestCase.name, TestMethod.name)
-                    debug("join_path TestCase: parent=%r grand=%r", parent, parent._source)
-                    path = self.join_path(parent.path, part)
                 else:           # TestMethod
                     path = self.join_path(parent.path, part)
 
