@@ -668,17 +668,7 @@ class MainWindow(object):
         "Event handler: a test case has been selected in the tree"
         if len(event.widget.selection()) == 1:
             label = event.widget.selection()[0]
-            try:
-                testMethod = self.test_suite.get_node_from_label(label)
-            except KeyError:
-                matches = self.test_suite.find_tests_substring(label)
-                if len(matches) == 1:
-                    debug("Resolved %r as %r", label, matches[0])
-                    testMethod = self.test_suite.get_node_from_label(matches[0])
-                else:
-                    debug("Could not resolve path %r: %r", label, matches)
-                    return
-
+            testMethod = self.test_suite.get_node_from_label(label)
             debug("testMethodSelected 1: %r, %r", event.widget.selection()[0], testMethod)
 
             self.name.set(testMethod.path)
