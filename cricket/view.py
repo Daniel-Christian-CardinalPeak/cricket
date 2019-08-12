@@ -492,8 +492,8 @@ class MainWindow(object):
         debug("add_test_module: %r %r %r as %r", parentNode, tag, testModule, testModule.name)
         testModule_node = self.all_tests_tree.insert(
             parentNode, 'end', testModule.path,
-            #text=testModule.name,  # BUG this is what we want to display, but not a good handle
-            text=testModule.path,  # BUG this is what we want to display, but not a good handle
+            text=testModule.name,  # BUG this is what we want to display, but not a good handle
+            #text=testModule.path,  # Full path is always an unique lookup
             tags=[tag, 'active'],
             open=True)          # always insert a node
 
