@@ -492,8 +492,7 @@ class MainWindow(object):
         debug("add_test_module: %r %r %r as %r", parentNode, tag, testModule, testModule.name)
         testModule_node = self.all_tests_tree.insert(
             parentNode, 'end', testModule.path,
-            text=testModule.name,  # BUG this is what we want to display, but not a good handle
-            #text=testModule.path,  # Full path is always an unique lookup
+            text=testModule.name,
             tags=[tag, 'active'],
             open=True)          # always insert a node
 
@@ -693,7 +692,7 @@ class MainWindow(object):
 
             if testMethod.status != testMethod.STATUS_UNKNOWN:
                 # Test has been executed
-                self.duration.set('%0.2fs' % testMethod._duration)
+                self.duration.set('%0.3fs' % testMethod._duration)
 
                 if testMethod.output:
                     self._show_test_output(testMethod.output)
