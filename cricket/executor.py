@@ -44,6 +44,9 @@ def parse_status_and_error(post):
     elif post['status'] == 'E':
         status = TestMethod.STATUS_ERROR
         error = post.get('error')
+    else:
+        status = 0              # live logging output
+        error = None
 
     return status, error
 
@@ -132,6 +135,8 @@ class Executor(EventSource):
 
     def poll(self):
         "Poll the runner looking for new test output"
+        # This expects json formatted lines either before or after exection
+        # There is no support for live stdout/stderr updates
         stopped = False
         finished = False
 
@@ -189,7 +194,16 @@ class Executor(EventSource):
                         status = TestMethod.STATUS_PASS  # Assume pass until told otherwise
                         error = ''
                         for line_num in range(1, len(self.buffer)):
-                            post = json.loads(self.buffer[line_num])
+                            if not self.buffer[line_num]:
+                                continue
+                            try:
+                                post = json.loads(self.buffer[line_num])
+                            except:
+                                debug("Error in JSON decoding:\n%s",
+                                      "\n".join([ "%r" % ln
+                                                  for ln in self.buffer[ : 1 + line_num]]))
+                                raise
+
                             subtest_status, subtest_error = parse_status_and_error(post)
                             if subtest_status > status:
                                 status = subtest_status
