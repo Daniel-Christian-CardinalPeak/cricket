@@ -11,14 +11,18 @@ class EventSource(object):
     @classmethod
     def bind(cls, event, handler):
         cls._events.setdefault(cls, {}).setdefault(event, []).append(handler)
+        debug("bind %r:%r to %r", cls, event, handler)
 
     def emit(self, event, **data):
-        debug("emit %r", event)
         try:
+            debug("emit %r:%r to %d", 
+                  self.__class__, event, len(self._events[self.__class__][event]))
             for handler in self._events[self.__class__][event]:
+                debug("emit %r(%r, **%r)", handler, self, data)
                 handler(self, **data)
         except KeyError:
             # No handler registered for event.
+            debug("emit %r:%r no receivers", self.__class__, event)
             pass
 
 
