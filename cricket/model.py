@@ -233,10 +233,10 @@ class TestNode:
 
         try:
             if self.path and substring in self.path:
-                debug("find_tests_substring got %r in %r", substring, self.path)
+                debug("find_tests_sub got %r in %r", substring, self.path)
                 ret.append(self.path)
             else:
-                debug("find_tests_substring no %r in %r", substring, self.path)  # DEBUG
+                #debug("find_tests_sub no %r in %r", substring, self.path)  # DEBUG
                 pass
         except AttributeError:
             pass                # TestSuite has no path
@@ -244,13 +244,13 @@ class TestNode:
         for subModuleName, subModule in sorted(self._child_nodes.items()):
             if subModule.can_have_children():  # walk the children
                 ret.extend(subModule.find_tests_substring(substring))
-        else:                   # TestMethods
-            if substring in subModule.path:
-                debug("find_tests_substring got %r in %r", substring, subModule.path)
-                ret.append(subModule.path)
-            else:
-                debug("find_tests_substring no %r in %r", substring, subModule.path)  # DEBUG
-                pass
+            else:                   # TestMethods
+                if substring in subModule.path:
+                    debug("find_tests_sub got %r in %r", substring, subModule.path)
+                    ret.append(subModule.path)
+                else:
+                    #debug("find_tests_sub no %r in %r", substring, subModule.path)  # DEBUG
+                    pass
 
         return ret
 
@@ -551,25 +551,35 @@ class TestSuite(TestNode, EventSource):
 
         parts = self.split_test_id(test_id)
         part_paths = [ d[1] for d in parts ]  # just the path strings
+        debug("put_test(%r) splits to: %r", test_id, parts)
 
         count = 0
         for NodeClass, part in parts:
             try:
-                child = parent[part]
-            except KeyError:
-                # need path so far, so re-create
-                # FIXME: parent needs to be all TestModules
-                # "path" needs to be TestMethod or (TestCase.name, TestMethod.name)
-                path = self.join_path(parent.path if parent is not None else None, part)
-                debug("put_test: test_id=%r path=%r", test_id, path)  # DEBUG
+                child = parent[part]  # already exists
+                debug("put_test found %r", child)
+            except KeyError:          # create and insert
+                # need path to this point
+                if parent is None or parent.path is None:
+                    path = self.join_path(None, part)
+                elif NodeClass == TestModule:
+                    path = self.join_path((parent.path, part), None)
+                elif isinstance(parent, TestCase):
+                    # FIXME
+                    # parent must be a TestModule
+                    # "path" needs to be TestMethod or (TestCase.name, TestMethod.name)
+                    debug("join_path TestCase: parent=%r grand=%r", parent, parent._source)
+                    path = self.join_path(parent.path, part)
+                else:           # TestMethod
+                    path = self.join_path(parent.path, part)
+
                 child = NodeClass(
                     source=self,
                     path=path,
                     name=part
                 )
                 parent[part] = child
-                debug("put_test created new node %r, name=%r for %r under %r",
-                      child, path, test_id, self)
+                debug("put_test created %r", child)
             parent = child
             count += 1
 

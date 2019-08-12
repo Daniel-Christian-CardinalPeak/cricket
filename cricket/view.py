@@ -489,10 +489,11 @@ class MainWindow(object):
             debug("add_test_module: Unknown testModule: %r", testModule)
             return
 
-        debug("add_test_module: %r %r %r", parentNode, tag, testModule)
+        debug("add_test_module: %r %r %r as %r", parentNode, tag, testModule, testModule.name)
         testModule_node = self.all_tests_tree.insert(
             parentNode, 'end', testModule.path,
-            text=testModule.name,
+            #text=testModule.name,  # BUG this is what we want to display, but not a good handle
+            text=testModule.path,  # BUG this is what we want to display, but not a good handle
             tags=[tag, 'active'],
             open=True)          # always insert a node
 
@@ -668,7 +669,17 @@ class MainWindow(object):
         "Event handler: a test case has been selected in the tree"
         if len(event.widget.selection()) == 1:
             label = event.widget.selection()[0]
-            testMethod = self.test_suite.get_node_from_label(label)
+            try:
+                testMethod = self.test_suite.get_node_from_label(label)
+            except KeyError:
+                matches = self.test_suite.find_tests_substring(label)
+                if len(matches) == 1:
+                    debug("Resolved %r as %r", label, matches[0])
+                    testMethod = self.test_suite.get_node_from_label(matches[0])
+                else:
+                    debug("Could not resolve path %r: %r", label, matches)
+                    return
+
             debug("testMethodSelected 1: %r, %r", event.widget.selection()[0], testMethod)
 
             self.name.set(testMethod.path)
