@@ -746,16 +746,10 @@ class MainWindow(object):
             debug("nodeStatusUpdate: %r fail", node.path)
             parts = self.test_suite.split_test_id(node.path)
             parentModule = self.test_suite
-            for pos, part in enumerate(parts):
+            for part in parts:  # walk down tree so we can create missing levels
                 testModule = parentModule[part[1]]
-                if parentModule is None or parentModule.path is None:
-                    path = self._test_suite.join_path(None, part[1])
-                elif part[0] == TestModule:
-                    path = self._test_suite.join_path((parentModule.path, part[1]), None)
-                else:
-                    path = self._test_suite.join_path(parentModule.path, part[1])
 
-                if not self.problem_tests_tree.exists(path):
+                if not self.problem_tests_tree.exists(testModule.path):
                     debug("Create problem node %r under %r", testModule, parentModule)
                     parent_path = parentModule.path if parentModule.path else ''
                     self.problem_tests_tree.insert(
