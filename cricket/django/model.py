@@ -87,13 +87,17 @@ class DjangoTestSuite(TestSuite):
 
     def join_path(self, parent, part):
         """Join split portions back into a test label string."""
-        if isinstance(part, (list, tuple)):
-            part = '.'.join(part)
-
         if parent is None:
             return part
-        else:
-            if isinstance(parent, (list, tuple)):
-                parent = '.'.join(parent)
 
-        return '{}.{}'.format(parent, part)
+        if isinstance(parent, (list, tuple)):
+            parent = '.'.join(parent)
+
+        if part:
+            if isinstance(part, (list, tuple)):
+                part = '.'.join(part)
+            ret = '{}.{}'.format(parent, part)
+        else:
+            ret = parent
+
+        return ret

@@ -669,8 +669,8 @@ class MainWindow(object):
         "Event handler: a test case has been selected in the tree"
         if len(event.widget.selection()) == 1:
             label = event.widget.selection()[0]
+            debug("testMethodSelected 1: %r", event.widget.selection()[0])
             testMethod = self.test_suite.get_node_from_label(label)
-            debug("testMethodSelected 1: %r, %r", event.widget.selection()[0], testMethod)
 
             self.name.set(testMethod.path)
 
