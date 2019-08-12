@@ -235,9 +235,6 @@ class TestNode:
             if self.path and substring in self.path:
                 debug("find_tests_sub got %r in %r", substring, self.path)
                 ret.append(self.path)
-            else:
-                #debug("find_tests_sub no %r in %r", substring, self.path)  # DEBUG
-                pass
         except AttributeError:
             pass                # TestSuite has no path
 
@@ -248,9 +245,6 @@ class TestNode:
                 if substring in subModule.path:
                     debug("find_tests_sub got %r in %r", substring, subModule.path)
                     ret.append(subModule.path)
-                else:
-                    #debug("find_tests_sub no %r in %r", substring, subModule.path)  # DEBUG
-                    pass
 
         return ret
 
