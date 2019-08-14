@@ -140,11 +140,23 @@ class Executor(EventSource):
         stopped = False
         finished = False
 
+        # Check to see if the subprocess is still running.
+        if self.proc is None:   # process never started (should never happen)
+            stopped = True
+            debug("Process never started")
+        elif self.proc.poll() is not None:  # process has exited
+            stopped = True
+            debug("Process exited with %d", self.proc.poll())
+            # TODO: track overall exit status
+            # there still might be output in the pipes
+
         # Read from stdout, building a buffer.
         lines = []
         try:
             while True:
-                lines.append(self.stdout.get(block=False))
+                line = self.stdout.get(block=False)
+                lines.append(line)
+                debug("Line: %r", line)
         except Empty:
             # queue.get() raises an exception when the queue is empty.
             # This means there is no more output to consume at this time.
@@ -153,18 +165,13 @@ class Executor(EventSource):
         # Read from stderr, building a buffer.
         try:
             while True:
-                self.error_buffer.append(self.stderr.get(block=False))
+                line = self.stderr.get(block=False)
+                self.error_buffer.append(line)
+                debug("Stderr: %r", line)
         except Empty:
             # queue.get() raises an exception when the queue is empty.
             # This means there is no more output to consume at this time.
             pass
-
-        # Check to see if the subprocess is still running.
-        # If it isn't, raise an error.
-        if self.proc is None:
-            stopped = True
-        elif self.proc.poll() is not None:
-            stopped = True
 
         separator_lines = (PipedTestResult.RESULT_SEPARATOR,
                            PipedTestRunner.START_TEST_RESULTS,

@@ -279,11 +279,11 @@ class TestMethod(EventSource):
         self._active = True
 
         # Test status
-        self._description = ''
-        self._status = self.STATUS_UNKNOWN
-        self._output = None
-        self._error = None
-        self._duration = None
+        self._description = ''             # test description (string)
+        self._status = self.STATUS_UNKNOWN  # test status (see STATUS_* codes above)
+        self._output = None     # captured output text (string)
+        self._error = None      # captured stderr text (string)
+        self._duration = None   # run time in seconds
         #debug("%r (source=%r, path=%r, name=%r)", self, source, path, name)
 
     def __repr__(self):
@@ -500,7 +500,7 @@ class TestSuite(TestNode, EventSource):
         """Rediscover the tests in the test suite.
         """
         if test_list is None:
-            debug("Calling %s to discover tests", self.discover_commandline())
+            debug("Running %s to discover tests", self.discover_commandline())
             runner = subprocess.Popen(
                 self.discover_commandline(),
                 stdin=None,
@@ -512,7 +512,7 @@ class TestSuite(TestNode, EventSource):
             test_list = []
             for line in runner.stdout:
                 line = line.strip().decode('utf-8')
-                debug("Got line %r", line)
+                #debug("Got line %r", line)
                 test_list.append(line)
 
             errors = []
@@ -543,13 +543,13 @@ class TestSuite(TestNode, EventSource):
 
         parts = self.split_test_id(test_id)
         part_paths = [ d[1] for d in parts ]  # just the path strings
-        debug("put_test(%r) splits to: %r", test_id, parts)
+        #debug("put_test(%r) splits to: %r", test_id, parts)
 
         count = 0
         for NodeClass, part in parts:
             try:
                 child = parent[part]  # already exists
-                debug("put_test found %r", child)
+                #debug("put_test found %r", child)
             except KeyError:          # create and insert
                 # need path to this point
                 if parent is None or parent.path is None:

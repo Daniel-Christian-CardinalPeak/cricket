@@ -941,10 +941,10 @@ class MainWindow(object):
 
     def _show_test_output(self, content):
         "Show the test output panel on the test results page"
-        self.output.delete('1.0', END)
-        self.output.insert('1.0', content)
+        self.output.delete('1.0', END)  # clear contents
+        self.output.insert('1.0', content)  # insert new contents
 
-        self.output_label.grid()
+        self.output_label.grid()  # enable in window?
         self.output.grid()
         self.output_scrollbar.grid()
         self.details_frame.rowconfigure(3, weight=5)
