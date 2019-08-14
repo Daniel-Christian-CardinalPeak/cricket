@@ -17,11 +17,14 @@ from cricket.pipes import PipedTestResult, PipedTestRunner
 def enqueue_output(out, queue):
     """A utility method for consuming piped output from a subprocess.
 
-    Reads content from `out` one line at a time, and puts it onto
-    queue for consumption in a separate thread.
+    Run this as a thread to get non-blocking data from out.
+
+    Reads content from `out` one line at a time, strip trailing
+    whitespace, and puts it onto queue for consumption
     """
-    for line in iter(out.readline, b''):
-        queue.put(line.strip().decode('utf-8'))
+    for line in iter(out.readline, b''):  # read until EOF
+        queue.put(line.rstrip().decode('utf-8'))
+    debug("enqueue_output closing %r", out)
     out.close()
 
 
@@ -163,6 +166,7 @@ class Executor(EventSource):
             pass
 
         # Read from stderr, building a buffer.
+        # pytest never generates stderr (why???), but unittest does
         try:
             while True:
                 line = self.stderr.get(block=False)
@@ -210,6 +214,11 @@ class Executor(EventSource):
                                       "\n".join([ "%r" % ln
                                                   for ln in self.buffer[ : 1 + line_num]]))
                                 raise
+
+                            if post['status'] == 'o':
+                                if self.current_test:
+                                    self.current_test.add_output(post['output'].splitlines())
+                                continue
 
                             subtest_status, subtest_error = parse_status_and_error(post)
                             if subtest_status > status:
@@ -288,6 +297,7 @@ class Executor(EventSource):
         if finished:
             debug("Finished. %d in error buffer", len(self.error_buffer))
             if self.error_buffer:
+                # This puts all stderr output into a popup
                 self.emit('suite_end', error='\n'.join(self.error_buffer))
             else:
                 self.emit('suite_end')
@@ -297,6 +307,7 @@ class Executor(EventSource):
             debug("Process stopped. %d in error buffer", len(self.error_buffer))
             # Suite has stopped producing output.
             if self.error_buffer:
+                # This puts all stderr output into a popup
                 self.emit('suite_error', error='\n'.join(self.error_buffer))
             else:
                 self.emit('suite_error', error='Test output ended unexpectedly')

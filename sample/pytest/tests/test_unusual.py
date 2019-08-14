@@ -17,10 +17,15 @@ def test_logging():
 
 
 def test_mixed_stdout_stderr():
+    delay = 0.05
     print("Twinkle, twinkle")
+    time.sleep(delay)
     print("Little star", file=sys.stderr)
+    time.sleep(delay)
     print("How I wonder")
+    time.sleep(delay)
     print("What you are", file=sys.stderr)
+    time.sleep(delay)
 
 def slow():
     time.sleep(0.2)
