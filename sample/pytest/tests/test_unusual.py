@@ -48,8 +48,10 @@ def test_mixed_stdout_stderr():
     print("What you are", file=sys.stderr)
     time.sleep(delay)
 
-# TODO: large amount of output
-# TODO: stack trace
+def test_stack_trace():
+    def who_in_there(arg):
+        ret = arg["not there"]
+    who_in_there({ "who" : "that"})
 
 def slow():
     time.sleep(0.2)

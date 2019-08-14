@@ -181,17 +181,16 @@ class Executor(EventSource):
                 try:
                     post = json.loads(line)
                 except:         # wasn't valid json, just collect as output
-                    debug("Wasn't Json: %r", line)
+                    debug("Wasn't really Json: %r", line)
                     pass
 
                 if post is not None:
-                    debug("Json line: %r", post)
-
                     if ('start_time' in post) and ('path' in post):  # start of a test
                         if self.current_test is not None:
                             debug("test start didn't follow a test end")
                         self.test_start = post  # save test start info for later
                         self._handle_test_start(post)  # find test and set current_test
+                        continue
 
                     elif ('end_time' in post) and ('status' in post):  # test end
                         # TODO: handle sub test results (which look like ???)
@@ -202,8 +201,8 @@ class Executor(EventSource):
                         self._handle_test_end(status, error, self.test_start, post)
                         
                         self.current_test = None  # Clear the decks for the next test.
-
-                    continue
+                        continue
+            # if that wasn't json, or json that we recognized, fall through to output capture
 
             if self.current_test is None: # A test isn't running - send to status update line
                 line = line.strip()
