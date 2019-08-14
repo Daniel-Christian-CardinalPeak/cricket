@@ -163,6 +163,7 @@ class Executor(EventSource):
             # Start of suite or new test. Next line will be test start
             if line in (PipedTestRunner.START_TEST_RESULTS, PipedTestResult.RESULT_SEPARATOR):
                 debug("Test (or suite) start")
+                self.current_test = None
                 continue
 
             elif line == PipedTestRunner.END_TEST_RESULTS: # End of test suite execution.
@@ -193,14 +194,15 @@ class Executor(EventSource):
                         continue
 
                     elif ('end_time' in post) and ('status' in post):  # test end
-                        # TODO: handle sub test results (which look like ???)
+                        # sub test may have multiple results for one start (unittest)
                         if self.current_test is None:
                             debug("test result didn't follow a test start")
 
-                        status, error = parse_status_and_error(post)
-                        self._handle_test_end(status, error, self.test_start, post)
-                        
-                        self.current_test = None  # Clear the decks for the next test.
+                        else:
+                            status, error = parse_status_and_error(post)
+                            self._handle_test_end(status, error, self.test_start, post)
+                            # TODO: aggregate sub test status
+                            # we can't clear current_test if there are sub-tests
                         continue
             # if that wasn't json, or json that we recognized, fall through to output capture
 

@@ -772,13 +772,13 @@ class MainWindow(object):
                 # Check all parents of this node. Recursively remove
                 # any parent has no children as a result of this deletion.
                 has_children = False
-                node = node.parent
+                node = node._source
                 while node.path and not has_children:
                     if not self.problem_tests_tree.get_children(node.path):
                         self.problem_tests_tree.delete(node.path)
                     else:
                         has_children = True
-                    node = node.parent
+                    node = node._source
 
     def on_coverageChange(self):
         "Event handler: when the coverage checkbox has been toggled"
