@@ -25,6 +25,9 @@ Cricket
 
 Cricket is part of the `BeeWare suite`_. The project website is `http://pybee.org/cricket`_.
 
+New versions (> 0.2) of Cricket use the Toga widget toolkit and support
+pytest.  This version is a backport of pytest to tkinter.
+
 Cricket is a graphical tool that helps you run your test suites.
 
 Normal unittest test runners dump all output to the console, and provide very
@@ -53,9 +56,13 @@ Quickstart
 
 At present, Cricket has support for:
 
+* pytest test suites.
 * Pre-Django 1.6 project test suites,
 * Django 1.6+ project test suites using unittest2-style discovery, and
 * unittest project test suites.
+
+TODO: document running pytest::
+    $ pip3 install -r requirements.txt
 
 In your Django project, install cricket, and then run it::
 
@@ -83,10 +90,10 @@ Problems under Ubuntu
 ~~~~~~~~~~~~~~~~~~~~~
 
 Ubuntu's packaging of Python omits the ``idlelib`` library from it's base
-package. If you're using Python 2.7 on Ubuntu 13.04, you can install
+package. If you're using Python 3.6 on Ubuntu 18.04, you can install
 ``idlelib`` by running::
 
-    $ sudo apt-get install idle-python2.7
+    $ sudo apt-get install python3-tk idle-python3.6
 
 For other versions of Python and Ubuntu, you'll need to adjust this as
 appropriate.
