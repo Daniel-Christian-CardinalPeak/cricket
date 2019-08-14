@@ -19,7 +19,8 @@ def test_logging():
 
 def test_lots_o_output():
     # http://99-bottles-of-beer.net/language-python-808.html
-    for quant in range(99, 0, -1):
+    start = 49                 # trim down to be a bit more manageable
+    for quant in range(start, 0, -1):
        if quant > 1:
           print(quant, "bottles of beer on the wall,", quant, "bottles of beer.")
           if quant > 2:
@@ -31,6 +32,8 @@ def test_lots_o_output():
           suffix = "no more beer on the wall!"
        print("Take one down, pass it around,", suffix)
        print("")
+       # chunk the output to test real time parsing
+       time.sleep(1.0 / start)
 
     print("Remember kids -- always drink responsibly")
 

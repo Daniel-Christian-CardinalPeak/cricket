@@ -83,11 +83,8 @@ class Executor(EventSource):
         self.result_count = {}    # The count of specific test results { status : count }
         self.error_buffer = []    # An accumulator for error output from all the tests.
         self.current_test = None  # The TestMethod object currently under execution.
+        self.test_start = None    # Info from test start {path : "", start_time : seconds}
         self.start_time = None    # The timestamp when current_test started
-
-        # An accumulator of ouput from the current test.
-        # None if in suite setup/teardown.
-        self.buffer = None      # [ lines ]
 
         cmd = self.test_suite.execute_commandline(labels)
         debug("Running(%r): %r", os.getcwd(), cmd)
@@ -160,83 +157,63 @@ class Executor(EventSource):
             debug("Process exited with %d", self.proc.poll())
             # there still might be output in the pipes
 
-        # grab all input so far
-        lines = self._read_all_lines(self.stdout, name="Stdout: ")
+        # grab all complete lines so far
         self.error_buffer.extend(self._read_all_lines(self.stderr, name="Stderr: "))
+        for line in self._read_all_lines(self.stdout, name="Stdout: "):
+            # Start of suite or new test. Next line will be test start
+            if line in (PipedTestRunner.START_TEST_RESULTS, PipedTestResult.RESULT_SEPARATOR):
+                debug("Test (or suite) start")
+                continue
 
-        for line in lines:  # Process all the full lines that are available
-            if line in self.SEPARATOR_LINES:  # Look for a separator.
-                if self.buffer is None: # Preamble is finished. Set up the line buffer.
-                    self.buffer = []
-                    debug("Got preamble: %r", line)
-                else:
-                    # Start of new test result; record the last result
-                    # Then, work out what content goes where.
-                    pre = json.loads(self.buffer[0])
-                    debug("Got new result: %r", pre)
-                    if len(self.buffer) == 2:  # YUCK!!!  fragile
-                        # basic case: 1 start, 1 result
-                        # No subtests are present, or only one subtest
-                        post = json.loads(self.buffer[1])
+            elif line == PipedTestRunner.END_TEST_RESULTS: # End of test suite execution.
+                debug("Test suite finished")
+                finished = True
+                break
+
+            if line.startswith('\x1b'):  # Some tools insert escape sequences, strip that
+                nn = line.find('{')
+                if nn > 0:
+                    debug("Strip escape from: %r", line)
+                    line = line[nn:]
+
+            if line and (line[0] == '{') and (line[-1] == '}'):  # looks like json
+                post = None
+                try:
+                    post = json.loads(line)
+                except:         # wasn't valid json, just collect as output
+                    debug("Wasn't Json: %r", line)
+                    pass
+
+                if post is not None:
+                    debug("Json line: %r", post)
+
+                    if ('start_time' in post) and ('path' in post):  # start of a test
+                        if self.current_test is not None:
+                            debug("test start didn't follow a test end")
+                        self.test_start = post  # save test start info for later
+                        self._handle_test_start(post)  # find test and set current_test
+
+                    elif ('end_time' in post) and ('status' in post):  # test end
+                        # TODO: handle sub test results (which look like ???)
+                        if self.current_test is None:
+                            debug("test result didn't follow a test start")
+
                         status, error = parse_status_and_error(post)
+                        self._handle_test_end(status, error, self.test_start, post)
+                        
+                        self.current_test = None  # Clear the decks for the next test.
 
-                    else:
-                        # We have subtests; capture the most important
-                        # status (until we can capture all the statuses)
-                        status = TestMethod.STATUS_PASS  # Assume pass until told otherwise
-                        error = ''
-                        for line_num in range(1, len(self.buffer)):  # skips ??
-                            if not self.buffer[line_num]:
-                                continue
-                            try:
-                                post = json.loads(self.buffer[line_num])
-                            except:
-                                debug("Error in JSON decoding:\n%s",
-                                      "\n".join([ "%r" % ln
-                                                  for ln in self.buffer[ : 1 + line_num]]))
-                                raise
+                    continue
 
-                            if post['status'] == 'o':
-                                if self.current_test:
-                                    self.current_test.add_output(post['output'].splitlines())
-                                continue
+            if self.current_test is None: # A test isn't running - send to status update line
+                line = line.strip()
+                debug("Between test input: %r", line)
+                self.emit('test_status_update', update=line)
+                continue
 
-                            subtest_status, subtest_error = parse_status_and_error(post)
-                            if subtest_status > status:
-                                status = subtest_status
-                            if subtest_error:
-                                error += subtest_error + '\n\n'
-
-                    self._handle_test_end(status, error, pre, post)
-
-                    if line == PipedTestRunner.END_TEST_RESULTS:
-                        # End of test execution.
-                        # Mark the runner as finished, and move back
-                        # to a pre-test state in the results.
-                        finished = True
-                        self.buffer = None
-
-            else:      # Not a separator line, so it's actual content.
-                if self.buffer is None:
-                    # Suite isn't running yet - just display the output
-                    # as a status update line. BUG??? never triggers.
-                    self.emit('test_status_update', update=line)
-                else:
-                    # Suite is running - have we got an active test?
-                    # Doctest (and some other tools) output invisible escape sequences.
-                    # Strip these if they exist.
-                    if line.startswith('\x1b'):
-                        line = line[line.find('{'):]
-
-                    # Store the cleaned buffer
-                    self.buffer.append(line)
-
-                    # If we don't have an currently active test, this line will
-                    # contain the path for the test.
-                    if self.current_test is None:
-                        pre = json.loads(line)
-                        if self._handle_test_start(pre):
-                            return True
+            else:
+                self.current_test.add_output((line, ))
+                continue
 
         if finished:            # saw suite end
             debug("Finished. %d in error buffer", len(self.error_buffer))
@@ -337,7 +314,3 @@ class Executor(EventSource):
         self.current_test.emit('status_update', node=self.current_test)
         self.emit('test_end', test_path=self.current_test.path,
                   result=status, remaining_time=remaining)
-
-        # Clear the decks for the next test.
-        self.current_test = None
-        self.buffer = []

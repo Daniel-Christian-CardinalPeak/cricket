@@ -38,8 +38,6 @@ def pytest_configure(config):
         config.pluginmanager.register(reporter, "terminalreporter")
 
 
-#BUG: There is no concept of live output.  The test has to exit, then return output
-
 class CricketReporter:
     def __init__(self, config, file=None):
         self.config = config
@@ -60,14 +58,14 @@ class CricketReporter:
     # handle output while the test is running
     def write(self, arg):
         """Logging wants to call write()."""
-        self.print(json.dumps({"status" : "o", "output" : arg}), flush=True)
+        self.print(arg, flush=True)
 
     # This doesn't error, but the output is lost. executor can't
     # handle output while the test is running
     def section(self, arg, sep='-', bold=False):
         """Pytest Logging wants to call section()."""
         # I can't find the source to emulate.  Just don't throw an error
-        self.print(json.dumps({"status" : "o", "output" : arg}), flush=True)
+        self.print("Section: ", arg, flush=True)
 
     def pytest_internalerror(self, excrepr):
         for line in str(excrepr).split("\n"):
