@@ -18,8 +18,9 @@ class PyTestTestSuite(TestSuite):
         }                       # our command line options
 
         # Don't assume commandline pytest is right one
-        # Always use the one in current python and preload our cricket plugin
-        self._pytest_exec = [sys.executable, '-m', 'pytest', '-p', 'pytest_cricket']
+        # Always use the one in current python, disable capture, and preload our plugin
+        self._pytest_exec = [sys.executable, '-m', 'pytest',
+                             '--capture=no', '-p', 'pytest_cricket']
 
     @classmethod
     def add_arguments(cls, parser):

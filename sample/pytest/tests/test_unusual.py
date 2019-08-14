@@ -31,9 +31,9 @@ def test_lots_o_output():
           print("1 bottle of beer on the wall, 1 bottle of beer.")
           suffix = "no more beer on the wall!"
        print("Take one down, pass it around,", suffix)
-       print("")
+       print("", flush=True)
        # chunk the output to test real time parsing
-       time.sleep(1.0 / start)
+       time.sleep(0.020)
 
     print("Remember kids -- always drink responsibly")
 

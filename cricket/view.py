@@ -787,7 +787,7 @@ class MainWindow(object):
     def on_testProgress(self):
         "Event handler: a periodic update to poll the runner for output, generating GUI updates"
         if self.executor and self.executor.poll():
-            self.root.after(100, self.on_testProgress)
+            self.root.after(50, self.on_testProgress)
 
     def on_executorStatusUpdate(self, event, update):
         "The executor has some progress to report"
@@ -918,7 +918,7 @@ class MainWindow(object):
         self.executor = Executor(self.test_suite, count, labels)
 
         # Queue the first progress handling event
-        self.root.after(100, self.on_testProgress)
+        self.root.after(50, self.on_testProgress)
 
     def stop(self):
         "Stop the test suite."
