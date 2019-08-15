@@ -101,6 +101,7 @@ class MainWindow(object):
 
         self.executor = None    # Executor object for currently running tests
         self._test_suite = None  # top of test tree
+        self._save_selection = None  # save selected test list (tree, selection_list)
 
         # Root window
         self.root = root
@@ -569,17 +570,13 @@ class MainWindow(object):
 
     def cmd_run_selected(self, event=None):
         "Command: The 'run selected' button has been pressed"
-        current_tree = self.current_test_tree
-
-        tests_to_run = set()
-        for path in current_tree.selection():
-            tests_to_run.add(path)
-
         # If the executor isn't currently running, we can
         # start a test run.
         if not self.executor or not self.executor.is_running:
+            current_tree = self.current_test_tree
+            self._save_selection = (current_tree, current_tree.selection())  # save selection
+            tests_to_run = set(self._save_selection[1])
             self.run(labels=tests_to_run)
-            #self.run(labels=set(current_tree.selection()))
 
     def cmd_rerun(self, event=None):
         "Command: The run/stop button has been pressed"
@@ -812,6 +809,9 @@ class MainWindow(object):
         self.run_status.set('Running %s...' % test_path)
         try:
             self.all_tests_tree.item(test_path, tags=['TestMethod', 'active'])
+            self.current_test_tree.selection_set((test_path, ))  # select only current test
+            debug("Set selection to: %r", test_path)             # DEBUG
+            self._need_update = True  # request a display update
         except TclError:
             debug("INTERNAL ERROR trying to set tags on %r", test_path)
 
@@ -820,12 +820,13 @@ class MainWindow(object):
         current_tree = self.current_test_tree
         if ((len(current_tree.selection()) != 1)
             or (current_tree.selection()[0] != test_path)):  # do nothing if not selected
-            #debug("test_output_update: not selected")        # DEBUG
+            debug("test_output_update: not selected")        # DEBUG
             return
 
         if was_empty:
             # trigger selection event to refresh result page, displaying output box
             # In this case, testMethod.output will be used, new_text is ignored
+            debug("test_output_update: re-selecting to show output")        # DEBUG
             current_tree.selection_set(current_tree.selection())
         else:
             self.output.insert(END, new_text)  # insert new contents at end
@@ -850,6 +851,7 @@ class MainWindow(object):
                 # If the test that just finished running is the selected
                 # test, force reset the selection, which will generate a
                 # selection event, forcing a refresh of the result page.
+                debug("on_executorTestEnd: re-selecting to show output")  # DEBUG
                 current_tree.selection_set(current_tree.selection())
         else:
             # No or Multiple tests selected
@@ -882,6 +884,10 @@ class MainWindow(object):
         dialog(message=message or 'No tests were ran')
 
         self._set_run_summary()  # Reset the run summary
+
+        if self._save_selection:
+            self._save_selection[0].selection_set(self._save_selection[1])  # restore selected tests
+            self._save_selection = None
 
         # Reset the buttons
         self.reset_button_states_on_end()
