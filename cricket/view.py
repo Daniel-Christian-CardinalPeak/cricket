@@ -99,7 +99,7 @@ class MainWindow(object):
 
         '''
 
-        self.executor = None
+        self.executor = None    # Executor object for currently running tests
         self._test_suite = None  # top of test tree
 
         # Root window
@@ -683,7 +683,7 @@ class MainWindow(object):
             self.test_status.set(config['symbol'])
 
             if testMethod.status != testMethod.STATUS_UNKNOWN:
-                # Test has been executed
+                # Test has been executed, so show status windows
                 self.duration.set('%0.3fs' % testMethod._duration)
 
                 if testMethod.output:
@@ -737,7 +737,8 @@ class MainWindow(object):
         self.all_tests_tree.item(node.path, open=False)
 
     def on_nodeStatusUpdate(self, event, node):
-        "Event handler: a node on the tree has received a status update"
+        """Event handler: a node on the tree has received a status update. 
+        Handles status_update"""
         self.all_tests_tree.item(node.path, tags=['TestMethod', STATUS[node.status]['tag']])
 
         if node.status in TestMethod.FAILING_STATES:
@@ -790,12 +791,12 @@ class MainWindow(object):
             self.root.after(50, self.on_testProgress)
 
     def on_executorStatusUpdate(self, event, update):
-        "The executor has some progress to report"
-        # Update the status line.
+        """The executor has some progress to report.  Handles test_status_update"""
+        # Update the status line with output that isn't tied to a running test
         self.run_status.set(update)
 
     def on_executorTestStart(self, event, test_path):
-        "The executor has started running a new test."
+        """The executor has started running a new test.  Handles test_start"""
         # Update status line, and set the tree item to active.
         self.run_status.set('Running %s...' % test_path)
         try:
@@ -804,7 +805,7 @@ class MainWindow(object):
             debug("INTERNAL ERROR trying to set tags on %r", test_path)
 
     def on_executorTestEnd(self, event, test_path, result, remaining_time):
-        "The executor has finished running a test."
+        """The executor has finished running a test. Handles test_end"""
         # Update the progress meter
         self.progress_value.set(self.progress_value.get() + 1)
 
@@ -832,7 +833,7 @@ class MainWindow(object):
             self._hide_test_errors()
 
     def on_executorSuiteEnd(self, event, error=None):
-        "The test suite finished running."
+        """The test suite finished running.  Handles suite_end"""
         # Display the final results
         self.run_status.set('Finished.')
 
@@ -859,7 +860,7 @@ class MainWindow(object):
         self.executor = None
 
     def on_executorSuiteError(self, event, error):
-        "An error occurred running the test suite."
+        """An error occurred running the test suite.  Handles suite_error"""
         # Display the error in a dialog
         self.run_status.set('Error running test suite.')
         FailedTestDialog(self.root, error)

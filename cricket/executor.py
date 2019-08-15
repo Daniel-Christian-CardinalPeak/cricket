@@ -214,6 +214,9 @@ class Executor(EventSource):
 
             else:
                 self.current_test.add_output((line, ))
+                # TODO: give new text to display
+                # self.emit('test_output_update', self.current_test.path, self.current_test.get_new_output())
+                # self.current_test.clear_new_output())
                 continue
 
         if finished:            # saw suite end
