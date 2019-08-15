@@ -134,12 +134,16 @@ class TestNode:
                 subcount = 0
                 subtests = []
                 found_partial = True
-            elif status and child_node.status not in status:
-                # There's at least one child marked inactive;
-                # this node is therefore a partial selection
-                subcount = 0
-                subtests = []
-                found_partial = True
+            elif status is not None:
+                # Search children of this child for the provided labels.
+                subcount, subtests = child_node.find_tests(
+                    active, status, labels, allow_all=allow_all)
+                if subtests is None:
+                    subtests = [child_node.path]
+                else:
+                    # At least one descendent of this child is excluded
+                    # that means this node is a partial match.
+                    found_partial = True
             else:
                 if labels:
                     # A specific set of tests has been requested.
@@ -382,6 +386,11 @@ class TestMethod(EventSource):
         """We're a leaf in tree, so it either matches us or doesn't."""
         if labels:
             if self.path in labels:
+                return 1, None
+            else:
+                return 0, []
+        elif status is not None:
+            if self._status in status:
                 return 1, None
             else:
                 return 0, []
