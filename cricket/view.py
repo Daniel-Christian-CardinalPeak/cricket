@@ -104,6 +104,7 @@ class MainWindow(object):
 
         # Root window
         self.root = root
+        self._need_update = False  # Set when we want to force a refresh
         self.root.title('Cricket')
         self.root.geometry('1024x768')
 
@@ -131,6 +132,7 @@ class MainWindow(object):
         # Set up listeners for runner events.
         Executor.bind('test_status_update', self.on_executorStatusUpdate)
         Executor.bind('test_start', self.on_executorTestStart)
+        Executor.bind('test_output_update', self.on_testOutputUpdate)
         Executor.bind('test_end', self.on_executorTestEnd)
         Executor.bind('suite_end', self.on_executorSuiteEnd)
         Executor.bind('suite_error', self.on_executorSuiteError)
@@ -675,16 +677,23 @@ class MainWindow(object):
 
             self.name.set(testMethod.path)
 
-            self.description.delete('1.0', END)
-            self.description.insert('1.0', testMethod.description)
-
-            config = STATUS.get(testMethod.status, STATUS_DEFAULT)
-            self.test_status_widget.config(foreground=config['color'])
-            self.test_status.set(config['symbol'])
+            if testMethod.description:
+                self.description.delete('1.0', END)
+                self.description.insert('1.0', testMethod.description)
 
             if testMethod.status != testMethod.STATUS_UNKNOWN:
+                config = STATUS.get(testMethod.status, STATUS_DEFAULT)
+                self.test_status_widget.config(foreground=config['color'])
+                self.test_status.set(config['symbol'])
+
+            # Show output as test is running
+            if ((testMethod.status != testMethod.STATUS_UNKNOWN)
+                or testMethod.output or testMethod.error):
                 # Test has been executed, so show status windows
-                self.duration.set('%0.3fs' % testMethod._duration)
+                if testMethod._duration is not None:
+                    self.duration.set('%0.3fs' % testMethod._duration)
+                else:
+                    self.duration.set('')
 
                 if testMethod.output:
                     self._show_test_output(testMethod.output)
@@ -695,16 +704,15 @@ class MainWindow(object):
                     self._show_test_errors(testMethod.error)
                 else:
                     self._hide_test_errors()
-            else:
-                # Test hasn't been executed yet.
+            else:               # Nothing to show
                 self.duration.set('Not executed')
 
                 self._hide_test_output()
                 self._hide_test_errors()
 
-        else:
+        else:            # Multiple tests selected, hide result fields
             debug("testMethodSelected: %r", event.widget.selection())
-            # Multiple tests selected
+
             self.name.set('')
             self.test_status.set('')
 
@@ -789,6 +797,9 @@ class MainWindow(object):
         "Event handler: a periodic update to poll the runner for output, generating GUI updates"
         if self.executor and self.executor.poll():
             self.root.after(50, self.on_testProgress)
+            if self._need_update:
+                self.root.update()  # force update on rapid changes
+                self._need_update = False
 
     def on_executorStatusUpdate(self, event, update):
         """The executor has some progress to report.  Handles test_status_update"""
@@ -803,6 +814,25 @@ class MainWindow(object):
             self.all_tests_tree.item(test_path, tags=['TestMethod', 'active'])
         except TclError:
             debug("INTERNAL ERROR trying to set tags on %r", test_path)
+
+    def on_testOutputUpdate(self, event, test_path, new_text, was_empty):
+        """A running test got output.  Handles test_output_update"""
+        current_tree = self.current_test_tree
+        if ((len(current_tree.selection()) != 1)
+            or (current_tree.selection()[0] != test_path)):  # do nothing if not selected
+            #debug("test_output_update: not selected")        # DEBUG
+            return
+
+        if was_empty:
+            # trigger selection event to refresh result page, displaying output box
+            # In this case, testMethod.output will be used, new_text is ignored
+            current_tree.selection_set(current_tree.selection())
+        else:
+            self.output.insert(END, new_text)  # insert new contents at end
+            # TODO: detect if user has changed position and don't scroll
+            self.output.see(END)               # scroll to bottom
+
+        self._need_update = True  # request a display update
 
     def on_executorTestEnd(self, event, test_path, result, remaining_time):
         """The executor has finished running a test. Handles test_end"""

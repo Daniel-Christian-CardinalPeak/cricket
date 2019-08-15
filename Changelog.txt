@@ -1,3 +1,4 @@
+* Have GUI display test output in real time
 * Have pytest always output in real time
 * Add command line argument for test directory
 * Add Quit to File menu
@@ -10,4 +11,3 @@
 * Make sure pytest plugin is always in path
 * Hand merge key file changes between pre-toga and pytest branch
 * Take pre-toga cricket (5/23/2017) and merge in pytest changes (3/23/2018 - 6/24/2018)
-

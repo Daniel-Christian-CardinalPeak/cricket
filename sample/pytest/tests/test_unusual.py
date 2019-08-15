@@ -33,7 +33,7 @@ def test_lots_o_output():
        print("Take one down, pass it around,", suffix)
        print("", flush=True)
        # chunk the output to test real time parsing
-       time.sleep(0.020)
+       time.sleep(0.050)
 
     print("Remember kids -- always drink responsibly")
 

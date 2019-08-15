@@ -282,9 +282,7 @@ class TestMethod(EventSource):
         self._description = ''             # test description (string)
         self._status = self.STATUS_UNKNOWN  # test status (see STATUS_* codes above)
         self._output = ''       # captured output text (string)
-        self._new_output = []   # new output lines
         self._error = ''        # captured stderr text (string)
-        self._new_error = []    # new error lines
         self._duration = None   # run time in seconds
         #debug("%r (source=%r, path=%r, name=%r)", self, source, path, name)
 
@@ -332,23 +330,9 @@ class TestMethod(EventSource):
 
         Adds to the output field and tracks new lines for the GUI
         """
-        self._new_output.extend(new_lines)
-
         if self._output:
             self._output += '\n'
         self._output += '\n'.join(new_lines)
-
-    def get_new_output(self):
-        """Get new output as a newline joined string"""
-        # The text widget can update itself with just the new text
-        return '\n'.join(self._new_output)
-
-    def clear_new_output(self):
-        """Clear the "new" output list."""
-        # The text widget clears the new text after insertion
-        self._new_output = []
-
-    # TODO: add_, get_new, clear_new for error
 
     @property
     def error(self):

@@ -213,10 +213,12 @@ class Executor(EventSource):
                 continue
 
             else:
+                was_empty = self.current_test.output == ""
                 self.current_test.add_output((line, ))
-                # TODO: give new text to display
-                # self.emit('test_output_update', self.current_test.path, self.current_test.get_new_output())
-                # self.current_test.clear_new_output())
+                # prepend newline if adding to existing text
+                new_text = ("" if was_empty else '\n') + line
+                self.emit('test_output_update',
+                          test_path=self.current_test.path, new_text=new_text, was_empty=was_empty)
                 continue
 
         if finished:            # saw suite end
