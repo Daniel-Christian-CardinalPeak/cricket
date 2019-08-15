@@ -674,9 +674,12 @@ class MainWindow(object):
 
             self.name.set(testMethod.path)
 
-            if testMethod.description:
-                self.description.delete('1.0', END)
-                self.description.insert('1.0', testMethod.description)
+            try:
+                if testMethod.description:
+                    self.description.delete('1.0', END)
+                    self.description.insert('1.0', testMethod.description)
+            except AttributeError:  # not a testMethod node
+                return
 
             if testMethod.status != testMethod.STATUS_UNKNOWN:
                 config = STATUS.get(testMethod.status, STATUS_DEFAULT)
