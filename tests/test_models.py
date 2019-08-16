@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 from cricket.compat import unittest
 from cricket.model import TestModule, TestCase
 
@@ -20,7 +22,7 @@ class TestTestSuite(unittest.TestCase):
 
     def test_no_tests(self):
         "If there are no tests, an empty tree is generated"
-        project = Project()
+        project = TestSuite()
         project.refresh(test_list=[])
         self.assertEqual(project.errors, [])
         self.assertEqual(sorted(self._full_tree(project)), sorted({}))
@@ -28,7 +30,7 @@ class TestTestSuite(unittest.TestCase):
     def test_with_tests(self):
         "If tests are found, the right tree is created"
 
-        project = Project()
+        project = TestSuite()
         project.refresh([
                 'tests.FunkyTestCase.test_something_unnecessary',
                 'more_tests.FunkyTestCase.test_this_does_make_sense',
@@ -63,7 +65,7 @@ class TestTestSuite(unittest.TestCase):
 
     def test_with_tests_and_errors(self):
         "If tests *and* errors are found, the tree is still created."
-        project = Project()
+        project = TestSuite()
         project.refresh([
                 'tests.FunkyTestCase.test_something_unnecessary',
             ],
@@ -88,7 +90,7 @@ class FindLabelTests(unittest.TestCase):
     "Check that naming tests by labels reduces to the right runtime list."
     def setUp(self):
         self.maxDiff = None
-        self.project = Project()
+        self.project = TestSuite()
         self.project.refresh([
                 'app1.TestCase.test_method',
 
@@ -123,7 +125,7 @@ class FindLabelTests(unittest.TestCase):
 
     def test_single_test_project(self):
         "If the project only contains a single test, the reduction is always the full suite"
-        self.project = Project()
+        self.project = TestSuite()
         self.project.refresh([
                 'app.package.tests.TestCase.test_method',
             ])
