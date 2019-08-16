@@ -12,10 +12,13 @@ class PyTestTestSuite(TestSuite):
 
     def __init__(self, options=None):
         super(PyTestTestSuite, self).__init__() 
-        self.cli_args = {
-            "log-cli-level" : options.log_cli_level,
-            "junit-xml" : options.junit_xml,
-        }                       # our command line options
+        if options:
+            self.cli_args = {
+                "log-cli-level" : options.log_cli_level,
+                "junit-xml" : options.junit_xml,
+            }                       # our command line options
+        else:
+            self.cli_args = {}
 
         # Don't assume commandline pytest is right one
         # Always use the one in current python, disable capture, and preload our plugin
@@ -43,7 +46,7 @@ class PyTestTestSuite(TestSuite):
             if self.cli_args[aa]:
                 args.extend(['--'+aa, self.cli_args[aa]])
 
-        if self.cli_args["junit-xml"]:  # create directory if needed
+        if "junit-xml" in self.cli_args and self.cli_args["junit-xml"]:  # create directory if needed
             jdir = os.path.dirname(self.cli_args["junit-xml"])
             if not os.path.exists(jdir):
                 os.mkdirs(jdir)
