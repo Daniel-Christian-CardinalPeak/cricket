@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import json
 import os
 import subprocess
@@ -21,19 +23,23 @@ class DiscoveryTests(unittest.TestCase):
 
     def test_discovery(self):
         suite = UnittestTestSuite()
-        runner = subprocess.run(
+        runner = subprocess.Popen(
             suite.discover_commandline(),
             stdin=None,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             shell=False,
         )
+        output, error = runner.communicate()
+        if error:
+            print("Ran: %r" % suite.discover_commandline())  # DEBUG
+            print(error)        # DEBUG
 
         found = set()
-        for line in runner.stdout:
-            line = line.decode('utf-8').split('\n')
+        for line in output.decode('utf-8').splitlines():
             if line:
                 found.add(line)
+                #print("Got: ", line)  # DEBUG
 
         self.assertEqual(
             found,
@@ -79,18 +85,23 @@ class ExecutorTests(unittest.TestCase):
 
     def execute(self, *args):
         suite = UnittestTestSuite()
-        runner = subprocess.run(
-            suite.execute_commandline(list(args)),
+        cmd = suite.execute_commandline(list(args))
+        runner = subprocess.Popen(
+            cmd,
             stdin=None,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             shell=False,
         )
+        output, error = runner.communicate()
+        if error:               # normal in our tests
+            #print("Ran: %r" % cmd)  # DEBUG
+            #print(error)        # DEBUG
+            pass
 
         found = set()
         results = {}
-        for line in runner.stdout:
-            line = line.decode('utf-8').split('\n')
+        for line in output.decode('utf-8').split('\n'):
             try:
                 payload = json.loads(line)
                 if 'path' in payload:
@@ -273,7 +284,7 @@ class SuiteSplitTests(unittest.TestCase):
 class SuiteJoinTests(unittest.TestCase):
     def test_join_method(self):
         suite = UnittestTestSuite()
-        parent = TestCase(None, 'tests.module.TestClass', 'TestClass')
+        parent = 'tests.module.TestClass'
         self.assertEqual(
             suite.join_path(parent, 'test_stuff'),
             'tests.module.TestClass.test_stuff'
@@ -281,7 +292,7 @@ class SuiteJoinTests(unittest.TestCase):
 
     def test_join_case(self):
         suite = UnittestTestSuite()
-        parent = TestModule(None, 'tests.module', 'module')
+        parent = 'tests.module'
         self.assertEqual(
             suite.join_path(parent, 'TestClass'),
             'tests.module.TestClass'
@@ -289,15 +300,8 @@ class SuiteJoinTests(unittest.TestCase):
 
     def test_join_module(self):
         suite = UnittestTestSuite()
-        parent = TestModule(None, 'tests', 'tests')
+        parent = 'tests'
         self.assertEqual(
-            suite.join_path(parent, 'module'),
+            suite.join_path((parent, 'module'), None),
             'tests.module'
-        )
-
-    def test_join_submodule(self):
-        suite = UnittestTestSuite()
-        self.assertEqual(
-            suite.join_path(suite, 'tests'),
-            'tests'
         )
