@@ -29,7 +29,7 @@ class EventSource(object):
 # TODO: debug support should be in it's own file
 _debug_on = False
 
-def debug(msg, *args, end='\n'):
+def debug(msg, *args, **kwargs):
     """Our simple debug printer.  Styled after log.debug()
     Print msg if debugging is on
 
@@ -47,7 +47,7 @@ def debug(msg, *args, end='\n'):
         return
     if args:
         msg = msg % args
-    print(msg, end=end, flush=True)
+    print(msg, end=kwargs.get('end', '\n'), flush=True)
 
 
 def set_debug(enable):
