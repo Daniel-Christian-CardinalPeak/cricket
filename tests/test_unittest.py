@@ -30,7 +30,8 @@ class DiscoveryTests(unittest.TestCase):
         )
 
         found = set()
-        for line in runner.stdout.decode('utf-8').split('\n'):
+        for line in runner.stdout:
+            line = line.decode('utf-8').split('\n')
             if line:
                 found.add(line)
 
@@ -88,7 +89,8 @@ class ExecutorTests(unittest.TestCase):
 
         found = set()
         results = {}
-        for line in runner.stdout.decode('utf-8').split('\n'):
+        for line in runner.stdout:
+            line = line.decode('utf-8').split('\n')
             try:
                 payload = json.loads(line)
                 if 'path' in payload:
