@@ -316,7 +316,7 @@ class SuiteJoinTests(unittest.TestCase):
         suite = PyTestTestSuite()
         parent = TestCase(None, 'tests/module.py::TestClass', 'TestClass')
         self.assertEqual(
-            suite.join_path(parent, TestMethod, 'test_stuff'),
+            suite.join_path(parent, 'test_stuff'),
             'tests/module.py::TestClass::test_stuff'
         )
 
@@ -324,7 +324,7 @@ class SuiteJoinTests(unittest.TestCase):
         suite = PyTestTestSuite()
         parent = TestCase(None, 'tests/module.py', 'module.py')
         self.assertEqual(
-            suite.join_path(parent, TestMethod, 'test_stuff'),
+            suite.join_path(parent, 'test_stuff'),
             'tests/module.py::test_stuff'
         )
 
@@ -332,7 +332,7 @@ class SuiteJoinTests(unittest.TestCase):
         suite = PyTestTestSuite()
         parent = TestModule(None, 'tests/module.py', 'module.py')
         self.assertEqual(
-            suite.join_path(parent, TestCase, 'TestClass'),
+            suite.join_path(parent, 'TestClass'),
             'tests/module.py::TestClass'
         )
 
@@ -340,13 +340,13 @@ class SuiteJoinTests(unittest.TestCase):
         suite = PyTestTestSuite()
         parent = TestModule(None, 'tests', 'tests')
         self.assertEqual(
-            suite.join_path(parent, TestModule, 'module.py'),
+            suite.join_path(parent, 'module.py'),
             'tests/module.py'
         )
 
     def test_join_submodule(self):
         suite = PyTestTestSuite()
         self.assertEqual(
-            suite.join_path(suite, TestModule, 'tests'),
+            suite.join_path(suite, 'tests'),
             'tests'
         )

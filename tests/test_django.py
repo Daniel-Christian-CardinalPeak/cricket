@@ -292,7 +292,7 @@ class SuiteJoinTests(unittest.TestCase):
         suite = DjangoTestSuite()
         parent = TestCase(None, 'app.tests.module.TestClass', 'TestClass')
         self.assertEqual(
-            suite.join_path(parent, TestMethod, 'test_stuff'),
+            suite.join_path(parent, 'test_stuff'),
             'app.tests.module.TestClass.test_stuff'
         )
 
@@ -300,7 +300,7 @@ class SuiteJoinTests(unittest.TestCase):
         suite = DjangoTestSuite()
         parent = TestModule(None, 'app.tests.module', 'module')
         self.assertEqual(
-            suite.join_path(parent, TestCase, 'TestClass'),
+            suite.join_path(parent, 'TestClass'),
             'app.tests.module.TestClass'
         )
 
@@ -308,7 +308,7 @@ class SuiteJoinTests(unittest.TestCase):
         suite = DjangoTestSuite()
         parent = TestModule(None, 'app.tests', 'tests')
         self.assertEqual(
-            suite.join_path(parent, TestModule, 'module'),
+            suite.join_path(parent, 'module'),
             'app.tests.module'
         )
 
@@ -316,13 +316,13 @@ class SuiteJoinTests(unittest.TestCase):
         suite = DjangoTestSuite()
         parent = TestModule(None, 'app', 'app')
         self.assertEqual(
-            suite.join_path(parent, TestModule, 'tests'),
+            suite.join_path(parent, 'tests'),
             'app.tests'
         )
 
     def test_join_app(self):
         suite = DjangoTestSuite()
         self.assertEqual(
-            suite.join_path(suite, TestModule, 'tests'),
+            suite.join_path(suite, 'tests'),
             'tests'
         )
