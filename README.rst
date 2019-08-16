@@ -22,11 +22,12 @@ Quickstart
 At present, Cricket has support for:
 
 * pytest test suites
-* unittest project test suites
-* Django 1.6+ project test suites using unittest2-style discovery
-* Pre-Django 1.6 project test suites
+* unittest test suites
+* Django 1.6+ test suites using unittest2-style discovery (untested)
+* Pre-Django 1.6 test suites (untested)
 
 Running pytest::
+
     $ pip3 install -r requirements.txt
     $ python cricket/pytest/__main__.py
 
