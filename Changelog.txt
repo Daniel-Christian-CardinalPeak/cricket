@@ -1,13 +1,12 @@
 * Have GUI display test output in real time
-* Have pytest always output in real time
 * Add command line argument for test directory
 * Add Quit to File menu
-* Add minimal pytest argument parsing (logging level, can junit_xml)
+* Add minimal pytest argument parsing (logging level, junit_xml)
 * Don't lose logging output and don't fault
-* Refector executor to handle continuous output
-* Fix pytest path split join to work properly
+* Refector executor to handle continuous test output
+* Fix pytest path split and join to work properly
 * Support the fact that pytest outputs unix paths on Windows
 * Invoke pytest as a module using current Python executable
-* Make sure pytest plugin is always in path
+* Make sure pytest cricket plugin is always in path
 * Hand merge key file changes between pre-toga and pytest branch
 * Take pre-toga cricket (5/23/2017) and merge in pytest changes (3/23/2018 - 6/24/2018)
