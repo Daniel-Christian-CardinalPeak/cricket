@@ -1,11 +1,27 @@
+from __future__ import print_function
+
 import json
-import os
+import os, sys
 import subprocess
 import unittest
 
 from cricket.pytest.model import PyTestTestSuite
 from cricket.model import TestModule, TestCase, TestMethod
 
+try:
+    import pytest_cricket
+except ImportError:
+    # We need the plugin on path, so find it
+    sub_path = "cricket/pytest"
+    for dd in (".", "..", "../.."):
+        pp = dd + '/' + sub_path
+        try_path = os.path.join(*(pp.split('/')))
+        #print("try_path=", try_path)                        # DEBUG
+        if os.path.exists(try_path):
+            sys.path.append(os.path.realpath(try_path))
+            os.environ['PYTHONPATH'] = os.pathsep.join(sys.path)  # export
+            #print("PYTHONPATH=", sys.path)                        # DEBUG
+            break
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.join(__file__)))
 SAMPLE_DIR = os.path.join(ROOT_DIR, 'sample', 'pytest')
@@ -21,17 +37,15 @@ class DiscoveryTests(unittest.TestCase):
 
     def test_discovery(self):
         suite = PyTestTestSuite()
-        runner = subprocess.Popen(
+        output = subprocess.check_output(
             suite.discover_commandline(),
             stdin=None,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
             shell=False,
         )
 
         found = set()
-        for line in runner.stdout:
-            line = line.decode('utf-8').split('\n')
+        for line in output.decode('utf-8').split('\n'):
             if line:
                 found.add(line)
 
@@ -54,16 +68,15 @@ class DiscoveryTests(unittest.TestCase):
                 'tests/test_outcomes.py::test_passing_item',
                 'tests/test_outcomes.py::test_skipped_item',
                 'tests/test_unusual.py::test_item_output',
+                'tests/test_unusual.py::test_stack_trace',
+                'tests/test_unusual.py::test_mixed_stdout_stderr',
+                'tests/test_unusual.py::test_lots_o_output',
+                'tests/test_unusual.py::test_logging',
                 'tests/test_unusual.py::test_slow_0',
                 'tests/test_unusual.py::test_slow_1',
                 'tests/test_unusual.py::test_slow_2',
                 'tests/test_unusual.py::test_slow_3',
                 'tests/test_unusual.py::test_slow_4',
-                'tests/test_unusual.py::test_slow_5',
-                'tests/test_unusual.py::test_slow_6',
-                'tests/test_unusual.py::test_slow_7',
-                'tests/test_unusual.py::test_slow_8',
-                'tests/test_unusual.py::test_slow_9',
             }
         )
 
@@ -82,14 +95,14 @@ class ExecutorTests(unittest.TestCase):
             suite.execute_commandline(list(args)),
             stdin=None,
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
             shell=False,
         )
+        output = runner.communicate()[0]  # stdout from execution
 
         found = set()
         results = {}
-        for line in runner.stdout:
-            line = line.decode('utf-8').split('\n')
+        for line in output.decode('utf-8').split('\n'):
             try:
                 payload = json.loads(line)
                 if 'path' in payload:
@@ -124,19 +137,18 @@ class ExecutorTests(unittest.TestCase):
             'tests/test_outcomes.py::test_passing_item',
             'tests/test_outcomes.py::test_skipped_item',
             'tests/test_unusual.py::test_item_output',
+            'tests/test_unusual.py::test_stack_trace',
+            'tests/test_unusual.py::test_mixed_stdout_stderr',
+            'tests/test_unusual.py::test_lots_o_output',
+            'tests/test_unusual.py::test_logging',
             'tests/test_unusual.py::test_slow_0',
             'tests/test_unusual.py::test_slow_1',
             'tests/test_unusual.py::test_slow_2',
             'tests/test_unusual.py::test_slow_3',
             'tests/test_unusual.py::test_slow_4',
-            'tests/test_unusual.py::test_slow_5',
-            'tests/test_unusual.py::test_slow_6',
-            'tests/test_unusual.py::test_slow_7',
-            'tests/test_unusual.py::test_slow_8',
-            'tests/test_unusual.py::test_slow_9',
         })
 
-        self.assertEqual(results, {'OK': 20, 'F': 2, 'E': 1, 'x': 1, 'u': 1, 's': 1})
+        self.assertEqual(results, {'OK': 18, 'F': 2, 'E': 2, 'x': 1, 'u': 1, 's': 1})
 
     def test_single_test_method(self):
         found, results = self.execute(
@@ -316,7 +328,7 @@ class SuiteSplitTests(unittest.TestCase):
 class SuiteJoinTests(unittest.TestCase):
     def test_join_method_unittest(self):
         suite = PyTestTestSuite()
-        parent = TestCase(None, 'tests/module.py::TestClass', 'TestClass')
+        parent = 'tests/module.py::TestClass'
         self.assertEqual(
             suite.join_path(parent, 'test_stuff'),
             'tests/module.py::TestClass::test_stuff'
@@ -324,7 +336,7 @@ class SuiteJoinTests(unittest.TestCase):
 
     def test_join_method(self):
         suite = PyTestTestSuite()
-        parent = TestCase(None, 'tests/module.py', 'module.py')
+        parent = 'tests/module.py'
         self.assertEqual(
             suite.join_path(parent, 'test_stuff'),
             'tests/module.py::test_stuff'
@@ -332,7 +344,7 @@ class SuiteJoinTests(unittest.TestCase):
 
     def test_join_case(self):
         suite = PyTestTestSuite()
-        parent = TestModule(None, 'tests/module.py', 'module.py')
+        parent = 'tests/module.py'
         self.assertEqual(
             suite.join_path(parent, 'TestClass'),
             'tests/module.py::TestClass'
@@ -340,15 +352,8 @@ class SuiteJoinTests(unittest.TestCase):
 
     def test_join_module(self):
         suite = PyTestTestSuite()
-        parent = TestModule(None, 'tests', 'tests')
+        parent = 'tests'
         self.assertEqual(
-            suite.join_path(parent, 'module.py'),
+            suite.join_path((parent, 'module.py'), None),
             'tests/module.py'
-        )
-
-    def test_join_submodule(self):
-        suite = PyTestTestSuite()
-        self.assertEqual(
-            suite.join_path(suite, 'tests'),
-            'tests'
         )
