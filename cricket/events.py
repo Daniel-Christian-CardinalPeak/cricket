@@ -1,5 +1,9 @@
 from __future__ import print_function
 
+import datetime
+import os
+
+
 class EventSource(object):
     """A source of GUI events.
 
@@ -63,3 +67,23 @@ def set_debug(enable):
 def is_debug():
     """Return debug enable status."""
     return _debug_on
+
+
+def fix_file_path(path):
+    """Turn a configuration file path into one suitable for the local OS."""
+
+    if not path:                # handle NULL case
+        return path
+
+    # Note: this is local timezone, but if your clock is set to UTC, you get that
+    now = datetime.datetime.now()
+    if "<DATE>" in path:        # insert date as YYMMDD
+        path = path.replace("<DATE>", now.strftime("%Y%m%d"))
+    elif "<DATETIME>" in path:  # insert datetime as YYMMDD-HHMMSS
+        path = path.replace("<DATETIME>", now.strftime("%y%m%d-%H%M%S"))
+
+    if '/' in path and os.sep != '/':  # convert slashes
+        path = os.path.join(*path.split('/'))
+
+    #debug("fix_file_path: end: %r", path)
+    return path

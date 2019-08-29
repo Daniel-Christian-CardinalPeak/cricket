@@ -2,6 +2,7 @@
 
 This is the "View" of the MVC world.
 """
+import os
 import subprocess
 try:
     from Tkinter import *
@@ -14,7 +15,7 @@ except ImportError:
     from tkinter.ttk import *
     from tkinter import messagebox as tkMessageBox
 import webbrowser
-from cricket.events import debug
+from cricket.events import debug, fix_file_path
 
 # Check for the existence of coverage and duvet
 try:
@@ -82,7 +83,7 @@ STATUS_DEFAULT = {
 
 
 class MainWindow(object):
-    def __init__(self, root):
+    def __init__(self, root, options=None):
         '''
         -----------------------------------------------------
         | main button toolbar                               |
@@ -99,6 +100,7 @@ class MainWindow(object):
 
         '''
 
+        self.options = options  # command line options
         self.executor = None    # Executor object for currently running tests
         self._test_suite = None  # top of test tree
         self._save_selection = None  # save selected test list (tree, selection_list)
@@ -844,6 +846,21 @@ class MainWindow(object):
         self.progress_value.set(self.progress_value.get() + 1)
 
         self._set_run_summary(remaining_time)  # Update the run summary
+
+        if self.options and self.options.save:  # write output to a file
+            testMethod = self.test_suite.get_node_from_label(test_path)
+
+            if testMethod.output:
+                fpath = self.options.save
+                if '<TESTNAME>' in fpath:
+                    fpath = fpath.replace('<TESTNAME>', testMethod._name)
+                fpath = fix_file_path(fpath)  # handles DATETIME and slashes
+                add2 = os.path.exists(fpath)
+                debug("Writing output to %r", fpath)
+                with open(fpath, 'a') as fd:
+                    if add2:
+                        print("================", file=fd)  # TODO: insert result, time, etc
+                    fd.write(testMethod.output)
 
         # If the test that just fininshed is the one (and only one)
         # selected on the tree, update the display.

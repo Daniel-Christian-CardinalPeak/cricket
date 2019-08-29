@@ -34,6 +34,8 @@ def main(Model):
                         help="Display version number and exit")
     parser.add_argument("--debug", "-d", action="store_true",
                         help="Turn on debug prints (to console).  Also pass python '-u'")
+    parser.add_argument("--save",
+                        help="Set path to save test output.  <TESTNAME> and <DATETIME> are replaced")
     parser.add_argument("testdir", action="store", default="", nargs='?',
                         help="Test root directory.  Default is current directory")
 
@@ -57,7 +59,7 @@ def main(Model):
     root = Tk()
 
     # Construct an empty window
-    view = MainWindow(root)
+    view = MainWindow(root, options=options)
 
     # Try to load the test_suite. If any error occurs during
     # test_suite load, show an error dialog
